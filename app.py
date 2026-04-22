@@ -198,10 +198,41 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
             <rect x="150" y="97" width="90" height="30" rx="15" fill="#f59e0b"/><text x="195" y="116" fill="white" font-size="9" text-anchor="middle">{svg_node2}</text>
           </svg>
         </div>
-        <div style="flex:1;font-size:11px;padding-top:6px;">
-          <b>Metric Key:</b><br><br>
-          <div style="width:44px;height:6px;background:linear-gradient(to right,#eff6ff,#1d4ed8);border-radius:3px;margin-bottom:4px;"></div>Support<br><br>
-          <div style="width:44px;height:6px;background:linear-gradient(to right,#fef2f2,#b91c1c);border-radius:3px;margin-bottom:4px;"></div>Confidence
+        <div style="flex:1;padding-top:4px;min-width:110px;">
+          <div style="font-size:10px;font-weight:800;color:#0f172a;letter-spacing:1px;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">METRIC KEY</div>
+
+          <div style="margin-bottom:11px;">
+            <div style="font-size:10px;font-weight:700;color:#1d4ed8;margin-bottom:4px;">SUPPORT</div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span style="font-size:9px;color:#94a3b8;">0</span>
+              <div style="flex:1;height:8px;background:linear-gradient(to right,#eff6ff,#1d4ed8);border-radius:4px;border:1px solid #e2e8f0;"></div>
+              <span style="font-size:9px;color:#1d4ed8;font-weight:600;">1</span>
+            </div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:3px;line-height:1.4;">How often the pattern<br>appears in the dataset</div>
+          </div>
+
+          <div style="margin-bottom:11px;">
+            <div style="font-size:10px;font-weight:700;color:#b91c1c;margin-bottom:4px;">CONFIDENCE</div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span style="font-size:9px;color:#94a3b8;">0</span>
+              <div style="flex:1;height:8px;background:linear-gradient(to right,#fef2f2,#b91c1c);border-radius:4px;border:1px solid #e2e8f0;"></div>
+              <span style="font-size:9px;color:#b91c1c;font-weight:600;">1</span>
+            </div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:3px;line-height:1.4;">Probability A leads<br>to B in same visit</div>
+          </div>
+
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#7c3aed;margin-bottom:4px;">LIFT</div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:10px;height:10px;border-radius:2px;background:#ede9fe;border:1px solid #c4b5fd;flex-shrink:0;"></div>
+              <span style="font-size:9px;color:#94a3b8;">&lt;1 negative</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:3px;">
+              <div style="width:10px;height:10px;border-radius:2px;background:#7c3aed;flex-shrink:0;"></div>
+              <span style="font-size:9px;color:#94a3b8;">&gt;1 meaningful</span>
+            </div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:3px;line-height:1.4;">Strength above<br>random co-occurrence</div>
+          </div>
         </div>
       </div>
     </div>
