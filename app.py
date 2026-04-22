@@ -28,6 +28,11 @@ def st_html(html_str):
 if 'primary_diag' not in st.session_state: st.session_state['primary_diag'] = "All"
 if 'secondary_diag' not in st.session_state: st.session_state['secondary_diag'] = "All"
 
+# --- Helper: Data Cleaning ---
+def clean_fs(x):
+    cleaned = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", str(x))
+    return cleaned.replace(",", ", ").strip()
+
 # --- Data Engine (Cached) ---
 PROCESSED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_processed")
 os.makedirs(PROCESSED_DIR, exist_ok=True)
@@ -50,21 +55,16 @@ def get_dashboard_data():
             rules.to_csv(rules_path, index=False)
         except: return None
     
-    # Pre-clean labels
-    def clean_frozenset(x):
-        cleaned = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", str(x))
-        return cleaned.replace(",", ", ").strip()
-    
     all_items = set()
     for col in ['antecedents', 'consequents']:
         for val in rules[col]:
-            items = clean_frozenset(val).split(",")
+            items = clean_fs(val).split(",")
             all_items.update([i.strip() for i in items if i.strip()])
-    return rules, sorted(list(all_items)), clean_frozenset
+    return rules, sorted(list(all_items))
 
 data = get_dashboard_data()
 if not data: st.stop()
-rules_df, all_items, clean_fs = data
+rules_df, all_items = data
 
 # --- Logic: Filter Rules ---
 filtered_rules = rules_df.copy()
