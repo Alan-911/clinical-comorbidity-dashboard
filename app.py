@@ -41,6 +41,10 @@ try:
     bg_html = f'<img src="data:image/png;base64,{bg_img}" style="position:fixed; top:55%; left:38%; height:85vh; z-index:0; opacity:0.8; pointer-events:none; animation:spin3D 30s linear infinite; transform-style:preserve-3d;">'
 except: pass
 
+def clean_fs(x):
+    cleaned = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", str(x))
+    return cleaned.replace(",", ", ").strip()
+
 # --- Data Engine ---
 @st.cache_data
 def get_processed_data():
@@ -58,18 +62,14 @@ def get_processed_data():
             rules.to_csv(rules_path, index=False)
         except: return None
     
-    def clean_fs(x):
-        cleaned = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", str(x))
-        return cleaned.replace(",", ", ").strip()
-    
     all_items = set()
     for val in rules['antecedents'].tolist() + rules['consequents'].tolist():
         all_items.update([i.strip() for i in clean_fs(val).split(",") if i.strip()])
-    return rules, sorted(list(all_items)), clean_fs
+    return rules, sorted(list(all_items))
 
 data = get_processed_data()
 if not data: st.stop()
-rules_df, all_items, clean_fs = data
+rules_df, all_items = data
 
 # --- Logic ---
 filtered = rules_df.copy()
