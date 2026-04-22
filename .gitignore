@@ -1,0 +1,7 @@
+*.pkl
+dolt_repo/
+outputs/
+.ipynb_checkpoints/
+__pycache__/
+*.zip
+dolt_bin/
