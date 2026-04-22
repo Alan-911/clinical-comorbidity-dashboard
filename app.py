@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import time
-import streamlit.components.v1 as components
 import os
 import base64
 import re
@@ -10,337 +9,271 @@ from mlxtend.preprocessing import TransactionEncoder
 from mlxtend.frequent_patterns import apriori, fpgrowth, association_rules
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import json
-import random
 
+# --- Atomic Page Config ---
 st.set_page_config(
-    page_title="Comorbidity Dashboard",
+    page_title="Clinical Comorbidity Dashboard",
     page_icon="⚕️",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- State Management ---
-if 'primary_diag' not in st.session_state: st.session_state['primary_diag'] = "All"
-if 'secondary_diag' not in st.session_state: st.session_state['secondary_diag'] = "All"
-
+# --- Zero-Flicker Renderer ---
 def st_html(html_str):
     """Flattens HTML to a single line to prevent Streamlit from parsing indented lines as Markdown code blocks."""
     flat_html = re.sub(r'\n\s*', ' ', html_str)
     st.markdown(flat_html, unsafe_allow_html=True)
 
-# --- Helper to encode local image for background ---
+# --- State Management ---
+if 'primary_diag' not in st.session_state: st.session_state['primary_diag'] = "All"
+if 'secondary_diag' not in st.session_state: st.session_state['secondary_diag'] = "All"
+
+# --- Data Engine (Cached) ---
+PROCESSED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_processed")
+os.makedirs(PROCESSED_DIR, exist_ok=True)
+
 @st.cache_data
-def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
+def get_dashboard_data():
+    rules_path = os.path.join(PROCESSED_DIR, "association_rules.csv")
+    if os.path.exists(rules_path):
+        rules = pd.read_csv(rules_path)
+    else:
+        trans_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transactions", "transactions.csv")
+        try:
+            df_trans = pd.read_csv(trans_path)
+            dataset = [str(items).split(",") for items in df_trans["Items"].tolist()]
+            te = TransactionEncoder()
+            te_ary = te.fit(dataset).transform(dataset)
+            df_encoded = pd.DataFrame(te_ary, columns=te.columns_)
+            freq_items = fpgrowth(df_encoded, min_support=0.01, use_colnames=True)
+            rules = association_rules(freq_items, metric="confidence", min_threshold=0.5)
+            rules.to_csv(rules_path, index=False)
+        except: return None
+    
+    # Pre-clean labels
+    def clean_frozenset(x):
+        cleaned = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", str(x))
+        return cleaned.replace(",", ", ").strip()
+    
+    all_items = set()
+    for col in ['antecedents', 'consequents']:
+        for val in rules[col]:
+            items = clean_frozenset(val).split(",")
+            all_items.update([i.strip() for i in items if i.strip()])
+    return rules, sorted(list(all_items)), clean_frozenset
 
+data = get_dashboard_data()
+if not data: st.stop()
+rules_df, all_items, clean_fs = data
+
+# --- Logic: Filter Rules ---
+filtered_rules = rules_df.copy()
+if st.session_state['primary_diag'] != "All":
+    filtered_rules = filtered_rules[filtered_rules['antecedents'].apply(lambda x: st.session_state['primary_diag'] in str(x))]
+if st.session_state['secondary_diag'] != "All":
+    filtered_rules = filtered_rules[filtered_rules['consequents'].apply(lambda x: st.session_state['secondary_diag'] in str(x))]
+filtered_rules = filtered_rules.sort_values('lift', ascending=False)
+
+# --- Component Builder: Timeline ---
+schedule_html = ""
+if len(filtered_rules) > 0:
+    for i, (_, row) in enumerate(filtered_rules.nlargest(3, 'lift').iterrows()):
+        ant, con = clean_fs(row['antecedents']), clean_fs(row['consequents'])
+        schedule_html += f"""
+        <div class="glass-card" style="padding:15px; margin-bottom:10px;">
+            <div class="timeline-item">
+                <div class="timeline-time">{14+i}:00</div>
+                <div class="timeline-title">Review {con[:12]}...</div>
+                <div class="timeline-desc">Context: {ant} &rarr; {con} (Lift: {row['lift']:.1f})</div>
+            </div>
+        </div>
+        """
+else:
+    schedule_html = '<div class="glass-card" style="padding:15px;">Standard Clinical Monitoring</div>'
+
+# --- Component Builder: Metric Matrix ---
+matrix_html = "<table style='width:100%; border-collapse:collapse; font-size:12px;'>"
+matrix_html += "<tr><th style='text-align:left;'>#</th><th>Logic</th><th>Supp</th><th>Conf</th></tr>"
+cmap_sup, cmap_conf = plt.get_cmap('Blues'), plt.get_cmap('Reds')
+if len(filtered_rules) > 0:
+    for i, (_, row) in enumerate(filtered_rules.nlargest(5, 'lift').iterrows(), 1):
+        s_v, c_v = row['support'], row['confidence']
+        s_n, c_n = min(1.0, max(0.2, s_v/0.2)), min(1.0, max(0.2, c_v/1.0))
+        bg_s, bg_c = mcolors.to_hex(cmap_sup(s_n)), mcolors.to_hex(cmap_conf(c_n))
+        matrix_html += f'<tr><td>{i}</td><td>{clean_fs(row["antecedents"])} &rarr; {clean_fs(row["consequents"])}</td><td style="background:{bg_s}; color:{"#fff" if s_n > 0.5 else "#000"}; text-align:center;">{s_v:.2f}</td><td style="background:{bg_c}; color:{"#fff" if c_n > 0.5 else "#000"}; text-align:center;">{c_v:.2f}</td></tr>'
+else:
+    matrix_html += "<tr><td colspan='4' style='text-align:center;'>No patterns selected</td></tr>"
+matrix_html += "</table>"
+
+# --- Specialist Data ---
+specialists_html = ""
+if len(filtered_rules) > 0:
+    con_c = clean_fs(filtered_rules.iloc[0]['consequents'])
+    for c in con_c.split(", ")[:3]:
+        specialists_html += f'<div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-bottom:10px; display:flex; align-items:center; gap:12px;"><div style="width:35px; height:35px; border-radius:50%; background:#eff6ff; display:flex; align-items:center; justify-content:center;">👨‍⚕️</div><div><div style="font-size:12px; font-weight:700;">{c} Expert</div><div style="font-size:10px; color:#64748b;">Specialist consult advised.</div></div></div>'
+else:
+    specialists_html = '<p style="font-size:12px; color:#64748b;">Select a profile to view specialists.</p>'
+
+# --- Encode Background ---
 base_path = os.path.dirname(os.path.abspath(__file__))
-img_path = os.path.join(base_path, "visualizations", "anatomical_model.png")
 try:
-    bg_img_b64 = get_base64_of_bin_file(img_path)
-    bg_style = f"""
-    @keyframes spin3D {{
-        from {{ transform: translate(-38%, -50%) rotateY(0deg); }}
-        to {{ transform: translate(-38%, -50%) rotateY(360deg); }}
-    }}
-    .bg-image {{
-        position: fixed;
-        top: 55%;
-        left: 38%;
-        height: 85vh;
-        z-index: 0;
-        opacity: 0.8;
-        pointer-events: none;
-        animation: spin3D 30s linear infinite;
-        transform-style: preserve-3d;
-    }}
-    """
-    bg_html = f'<img src="data:image/png;base64,{bg_img_b64}" class="bg-image">'
-except Exception:
-    bg_style, bg_html = "", ""
+    with open(os.path.join(base_path, "visualizations", "anatomical_model.png"), 'rb') as f:
+        bg_img = base64.b64encode(f.read()).decode()
+    bg_html = f'<img src="data:image/png;base64,{bg_img}" style="position:fixed; top:55%; left:38%; height:85vh; z-index:0; opacity:0.8; pointer-events:none; animation:spin3D 30s linear infinite; transform-style:preserve-3d;">'
+except: bg_html = ""
 
-# --- Consolidated CSS & Nav ---
+# --- 🚀 THE ATOMIC MASTER RENDERER ---
 st_html(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    header {{visibility: hidden;}}
-    .block-container {{ padding: 1rem; max-width: 100%; position: relative; z-index: 1; }}
+    #MainMenu, footer, header {{visibility: hidden;}}
+    .block-container {{ padding: 0.5rem; max-width: 100%; position: relative; z-index: 1; }}
     html, body, [class*="css"] {{ font-family: 'Inter', sans-serif; color: #0f172a; }}
     .stApp {{
         background-color: #f8fafc;
         background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
         background-size: 40px 40px;
     }}
-    {bg_style}
+    @keyframes spin3D {{ from {{ transform: translate(-38%, -50%) rotateY(0deg); }} to {{ transform: translate(-38%, -50%) rotateY(360deg); }} }}
     .navbar {{
         display: flex; align-items: center; justify-content: space-between; padding: 10px 40px;
         background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border-radius: 100px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; z-index: 10;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px;
     }}
-    .navbar-brand {{ font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }}
-    .navbar-links {{ display: flex; gap: 15px; }}
-    .nav-btn {{ padding: 10px 20px; border-radius: 50px; font-weight: 600; font-size: 14px; background: transparent; color: #475569; border: none; }}
-    .nav-btn.active {{ background: #0f172a; color: white; }}
     .glass-card {{
         background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8);
-        border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); margin-bottom: 20px; position: relative; z-index: 2;
+        border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); margin-bottom: 20px;
     }}
-    h3 {{ font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 15px; margin-top: 0; }}
-    .vitals-row {{ display: flex; gap: 10px; margin-bottom: 20px; }}
-    .vital-card {{ flex: 1; padding: 15px; border-radius: 15px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; }}
-    .vital-label {{ font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 2px; }}
-    .vital-value {{ font-size: 24px; font-weight: 700; color: #0f172a; }}
-    @keyframes heartbeat {{ 0% {{ transform: scale(1); }} 20% {{ transform: scale(1.25); }} 40% {{ transform: scale(1); }} 60% {{ transform: scale(1.15); }} 80% {{ transform: scale(1); }} 100% {{ transform: scale(1); }} }}
-    .heart-icon {{ animation: heartbeat 1.5s infinite; display: inline-block; color: #ef4444; }}
-    @keyframes brainwave {{ 0% {{ opacity: 0.5; }} 50% {{ opacity: 1; text-shadow: 0 0 10px #eab308; }} 100% {{ opacity: 0.5; }} }}
-    .brain-icon {{ animation: brainwave 2s infinite; display: inline-block; color: #eab308; }}
-    .ekg-line {{ height: 30px; width: 100%; margin-top: 10px; background: linear-gradient(90deg, transparent 0%, #ef4444 50%, transparent 100%); background-size: 100px 100%; animation: moveEKG 1s linear infinite; opacity: 0.5; }}
-    @keyframes moveEKG {{ 0% {{ background-position: 0 0; }} 100% {{ background-position: -100px 0; }} }}
     .timeline-item {{ margin-bottom: 15px; padding-left: 15px; border-left: 2px solid #e2e8f0; position: relative; }}
     .timeline-item::before {{ content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; }}
-    .timeline-time {{ font-size: 12px; color: #94a3b8; font-weight: 600; }}
-    .timeline-title {{ font-size: 14px; font-weight: 600; color: #0f172a; margin: 2px 0; }}
-    .timeline-desc {{ font-size: 12px; color: #64748b; }}
-    div[data-testid="stForm"] {{ border: none; padding: 0; background: transparent; }}
-    div[data-baseweb="select"] {{ border-radius: 12px !important; background: #f8fafc !important; border: 1px solid #e2e8f0 !important; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important; transition: all 0.2s ease !important; }}
-    div[data-baseweb="select"]:focus-within {{ border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important; }}
-    button[data-testid="baseButton-primary"] {{ background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; color: white !important; width: 100% !important; border-radius: 12px !important; padding: 12px !important; font-weight: 700 !important; border: none !important; margin-top: 15px !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; text-transform: uppercase; letter-spacing: 0.5px; font-size: 12px !important; }}
-    @keyframes zoomIn {{ from {{ transform: translate(-50%, -50%) scale(0.9); opacity: 0; }} to {{ transform: translate(-50%, -50%) scale(1); opacity: 1; }} }}
+    .timeline-time {{ font-size: 11px; color: #94a3b8; font-weight: 700; }}
+    .timeline-title {{ font-size: 13px; font-weight: 700; color: #0f172a; }}
+    .timeline-desc {{ font-size: 11px; color: #64748b; }}
+    .vitals-row {{ display: flex; gap: 10px; margin-bottom: 15px; }}
+    .vital-card {{ flex: 1; padding: 12px; border-radius: 12px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }}
+    .ekg-line {{ height: 2px; width: 100%; margin-top: 10px; background: linear-gradient(90deg, transparent, #ef4444, transparent); background-size: 100px 100%; animation: moveEKG 1s linear infinite; }}
+    @keyframes moveEKG {{ from {{ background-position: 0 0; }} to {{ background-position: -100px 0; }} }}
+    @keyframes heartbeat {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.2); }} }}
+    .heart {{ animation: heartbeat 1s infinite; color: #ef4444; display: inline-block; }}
     </style>
     {bg_html}
+    
     <div class="navbar">
-        <div class="navbar-brand">
-            <span style="font-size: 24px;">⚕️</span> <span style="color:#0f172a; font-weight:700; font-size:20px; margin-left:5px;">Comorbidity & Treatment Patterns</span>
+        <div style="font-weight:700; font-size:18px;">⚕️ Comorbidity & Treatment Patterns</div>
+        <div style="display:flex; gap:20px; font-size:13px; font-weight:600; color:#64748b;">
+            <span>Dashboard</span><span>Appointments</span><span>Schedule</span><span>Labs</span>
         </div>
-        <div class="navbar-links">
-            <button id="navDashboard" class="nav-btn active">Dashboard</button>
-            <button id="navAppointments" class="nav-btn">Appointments</button>
-            <button id="navSchedule" class="nav-btn">Schedule</button>
-            <button id="navLabs" class="nav-btn">Labs Results</button>
-        </div>
-        <div id="navProfile" style="display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
-            <div style="width:35px; height:35px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; margin-bottom:2px;">👤</div>
-            <span style="font-size: 10px; font-weight: 700; color: #475569;">Patient's Profile</span>
-        </div>
+        <div style="text-align:right;"><div style="font-size:10px; font-weight:800;">PATIENT #2440</div><div style="font-size:9px; color:#3b82f6;">CONNECTED</div></div>
     </div>
-""")
 
-# --- Data Mining Engine ---
-PROCESSED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_processed")
-os.makedirs(PROCESSED_DIR, exist_ok=True)
-
-@st.cache_data
-def get_processed_data():
-    rules_path = os.path.join(PROCESSED_DIR, "association_rules.csv")
-    itemsets_path = os.path.join(PROCESSED_DIR, "frequent_itemsets.csv")
-    if os.path.exists(rules_path) and os.path.exists(itemsets_path):
-        return pd.read_csv(rules_path), pd.read_csv(itemsets_path)
-    df_encoded = load_and_encode_data()
-    if df_encoded is not None:
-        freq_items = fpgrowth(df_encoded, min_support=0.01, use_colnames=True)
-        rules = association_rules(freq_items, metric="confidence", min_threshold=0.5)
-        rules.to_csv(rules_path, index=False)
-        freq_items.to_csv(itemsets_path, index=False)
-        return rules, freq_items
-    return None, None
-
-@st.cache_data
-def load_and_encode_data():
-    trans_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transactions", "transactions.csv")
-    try:
-        df_trans = pd.read_csv(trans_path)
-        dataset = [str(items).split(",") for items in df_trans["Items"].tolist()]
-        te = TransactionEncoder()
-        te_ary = te.fit(dataset).transform(dataset)
-        return pd.DataFrame(te_ary, columns=te.columns_)
-    except Exception: return None
-
-def clean_frozenset(x):
-    if not isinstance(x, str): x = str(x)
-    cleaned = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", x)
-    cleaned = cleaned.replace(",", ", ")
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    return cleaned.strip(",") if cleaned else "General"
-
-rules_raw, itemsets_raw = get_processed_data()
-if rules_raw is not None:
-    rules_df = rules_raw.copy()
-    all_items = set()
-    for col in ['antecedents', 'consequents']:
-        for val in rules_df[col]:
-            items = clean_frozenset(val).split(",")
-            all_items.update([i.strip() for i in items if i.strip()])
-    all_items = sorted(list(all_items))
-    total_visits, avg_events, time_apriori, time_fp = 2440, 3.2, 1.2, 0.4
-else:
-    rules_df, all_items = None, []
-    total_visits, avg_events, time_apriori, time_fp = 0, 0, 0, 0
-
-# --- Layout ---
-col1, col2, col3 = st.columns([1, 1.2, 1.5], gap="large")
-
-with col1:
-    # --- Dynamic Care Plan ---
-    current_selection_rules = rules_df.copy() if rules_df is not None else None
-    if st.session_state['primary_diag'] != "All":
-        current_selection_rules = current_selection_rules[current_selection_rules['antecedents'].apply(lambda x: st.session_state['primary_diag'] in str(x))]
-    if st.session_state['secondary_diag'] != "All":
-        current_selection_rules = current_selection_rules[current_selection_rules['consequents'].apply(lambda x: st.session_state['secondary_diag'] in str(x))]
-    
-    schedule_items = []
-    if current_selection_rules is not None and len(current_selection_rules) > 0:
-        for i, (idx, row) in enumerate(current_selection_rules.nlargest(3, 'lift').iterrows()):
-            ant, con = clean_frozenset(row['antecedents']), clean_frozenset(row['consequents'])
-            schedule_items.append({'time': f'{14+i}:00', 'title': f'Risk: {con[:12]}...', 'desc': f'Link: {ant} &rarr; {con}'})
-    
-    if not schedule_items: schedule_items = [{'time': '09:00', 'title': 'Routine Baseline', 'desc': 'Standard monitoring.'}]
-    
-    timeline_html = "".join([f'<div class="glass-card" style="padding:15px; margin-bottom:10px;"><div class="timeline-item"><div class="timeline-time">{item["time"]}</div><div class="timeline-title">{item["title"]}</div><div class="timeline-desc">{item["desc"]}</div></div></div>' for item in schedule_items])
-    st_html(f'<div><h3>Dynamic Care Plan</h3>{timeline_html}</div>')
-    
-    # --- Specialist Board Trigger ---
-    st_html(f"""
-        <div id="advisoryBtn" class="glass-card" style="margin-top:20px; border-left:4px solid #3b82f6; cursor:pointer;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:18px;">🩺</span><h3 style="margin:0; font-size:15px;">Multi-Disciplinary Consult</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1.2fr 1.5fr; gap: 25px;">
+        <!-- Left: Care Plan -->
+        <div>
+            <h3>Dynamic Care Plan</h3>
+            {schedule_html}
+            <div class="glass-card" style="border-left:4px solid #3b82f6; cursor:pointer;" id="advisoryTrigger">
+                <div style="font-weight:700; font-size:14px;">Multi-Disciplinary Consult</div>
+                <div style="font-size:11px; color:#64748b;">Click to view clinical board.</div>
             </div>
-            <p style="font-size:12px; color:#64748b; margin-top:5px;">AI-assisted specialist recommendations board.</p>
         </div>
-    """)
 
-with col2: st_html("<div style='height: 80vh;'></div>")
+        <!-- Middle: 3D Buffer -->
+        <div style="height: 1vh;"></div>
 
-with col3:
-    # --- Vitals ---
-    st_html(f"""
-        <div class="vitals-row">
-            <div class="vital-card"><div class="vital-label">Total Visits</div><div class="vital-value">{total_visits}</div><div class="ekg-line" style="background:linear-gradient(90deg, transparent, #3b82f6, transparent);"></div></div>
-            <div class="vital-card"><div class="vital-label">Avg Events</div><div class="vital-value">{avg_events}</div><div class="ekg-line" style="background:linear-gradient(90deg, transparent, #eab308, transparent);"></div></div>
-        </div>
-        <div class="vitals-row">
-            <div class="vital-card">Heart: <span id="liveHR">82</span>bpm <div class="heart-icon">❤</div></div>
-            <div class="vital-card">Brain: <span id="liveBrain">120</span>Hz <div class="brain-icon">🧠</div></div>
-            <div class="vital-card">Temp: <span id="liveTemp">38.5</span>°C <span style="color:#ef4444;">🌡</span></div>
-        </div>
-    """)
-    
-    # --- Main Heatmap & Graph Placeholder ---
-    graph_container = st.empty()
-    
-    # --- Pattern Selection & Algorithm (Restored Footer Layout) ---
-    bcol1, bcol2 = st.columns([1, 1.4], gap="small")
-    with bcol1:
-        st_html('<div class="glass-card" style="padding:20px; border-top:4px solid #0f172a;"><h3>Pattern Selection</h3>')
-        with st.form("pattern_form"):
-            p_diag = st.selectbox("Primary Diagnosis", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['primary_diag']))
-            s_diag = st.selectbox("Secondary Condition", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['secondary_diag']))
-            if st.form_submit_button("Update Analytics Board", type="primary"):
-                st.session_state['primary_diag'], st.session_state['secondary_diag'] = p_diag, s_diag
-                st.rerun()
-        st_html('</div>')
-    
-    with bcol2:
-        st_html(f"""
-            <div class="glass-card" style="padding:20px;">
-                <h3>Algorithm Comparison</h3>
-                <div style="display:flex; justify-content:space-between;">
-                    <div><div style="font-size:12px;">Apriori</div><div style="font-size:24px; font-weight:700;">{time_apriori}s</div></div>
-                    <div style="border-left:1px solid #e2e8f0; padding-left:15px;"><div style="font-size:12px;">FP-Growth</div><div style="font-size:24px; font-weight:700;">{time_fp}s</div></div>
-                </div>
+        <!-- Right: Analytics -->
+        <div>
+            <div class="vitals-row">
+                <div class="vital-card"><div style="font-size:10px; color:#94a3b8;">Visits</div><div style="font-size:20px; font-weight:700;">{total_visits}</div></div>
+                <div class="vital-card"><div style="font-size:10px; color:#94a3b8;">Avg Events</div><div style="font-size:20px; font-weight:700;">{avg_events}</div></div>
             </div>
-        """)
+            <div class="vitals-row">
+                <div class="vital-card"><span class="heart">❤</span> <span id="liveHR">82</span> bpm</div>
+                <div class="vital-card">🧠 <span id="liveBrain">120</span> Hz</div>
+                <div class="vital-card">🌡 <span id="liveTemp">38.5</span> °C</div>
+            </div>
 
-with graph_container.container():
-    # --- Metric Matrix (Restored Visuals) ---
-    if current_selection_rules is not None and len(current_selection_rules) > 0:
-        top_matrix = current_selection_rules.nlargest(5, 'lift')
-        table_html = "<table style='width:100%; border-collapse:collapse; font-size:12px;'>"
-        table_html += "<tr><th style='text-align:left; border-bottom:2px solid #e2e8f0;'>#</th><th style='text-align:left; border-bottom:2px solid #e2e8f0;'>Metric Matrix</th><th style='text-align:center; border-bottom:2px solid #e2e8f0;'>Support</th><th style='text-align:center; border-bottom:2px solid #e2e8f0;'>Confidence</th></tr>"
-        
-        cmap_sup, cmap_conf = plt.get_cmap('Blues'), plt.get_cmap('Reds')
-        for i, (idx, row) in enumerate(top_matrix.iterrows(), 1):
-            s_v, c_v = row['support'], row['confidence']
-            s_n, c_n = min(1.0, max(0.2, s_v / 0.2)), min(1.0, max(0.2, c_v / 1.0))
-            bg_s, bg_c = mcolors.to_hex(cmap_sup(s_n)), mcolors.to_hex(cmap_conf(c_n))
-            tc_s, tc_c = ("#fff" if s_n > 0.5 else "#000"), ("#fff" if c_n > 0.5 else "#000")
-            table_html += f'<tr><td style="font-weight:700;">{i}</td><td>{clean_frozenset(row["antecedents"])} &rarr; {clean_frozenset(row["consequents"])}</td><td style="background:{bg_s}; color:{tc_s}; text-align:center; padding:5px;">{s_v:.2f}</td><td style="background:{bg_c}; color:{tc_c}; text-align:center; padding:5px;">{c_v:.2f}</td></tr>'
-        table_html += "</table>"
-        
-        st_html(f"""
-            <div class="glass-card" style="padding:25px;">
+            <div class="glass-card">
                 <h3>Comorbidity Heatmap & Graph Hybrid</h3>
-                <div style="margin-bottom:25px;"><h4>Clinical Metric Matrix</h4>{table_html}</div>
-                <div style="display:flex; gap:25px; align-items:flex-start;">
-                    <div style="flex:1.2; height:220px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center;">
-                        <svg width="100%" height="100%" viewBox="0 0 400 200">
-                            <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="#94a3b8" /></marker></defs>
-                            <line x1="80" y1="90" x2="220" y2="40" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)" />
-                            <line x1="80" y1="90" x2="220" y2="90" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)" />
-                            <rect x="20" y="75" width="80" height="30" rx="15" fill="#3b82f6" /><text x="60" y="94" fill="white" font-size="10" text-anchor="middle">Profile</text>
-                            <rect x="220" y="25" width="80" height="30" rx="15" fill="#ef4444" /><text x="260" y="44" fill="white" font-size="10" text-anchor="middle">Comorbid</text>
-                            <rect x="220" y="75" width="80" height="30" rx="15" fill="#f59e0b" /><text x="260" y="94" fill="white" font-size="10" text-anchor="middle">Progression</text>
+                <div style="margin-bottom:20px;">{matrix_html}</div>
+                <div style="display:flex; gap:15px;">
+                    <div style="flex:1.2; height:150px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center;">
+                        <svg width="100%" height="100%" viewBox="0 0 200 100">
+                            <line x1="40" y1="50" x2="140" y2="20" stroke="#94a3b8" stroke-width="1" />
+                            <line x1="40" y1="50" x2="140" y2="80" stroke="#94a3b8" stroke-width="1" />
+                            <circle cx="40" cy="50" r="10" fill="#3b82f6" /><circle cx="140" cy="20" r="10" fill="#ef4444" /><circle cx="140" cy="80" r="10" fill="#f59e0b" />
                         </svg>
                     </div>
-                    <div style="flex:1;">
-                        <div style="font-size:12px; font-weight:700; margin-bottom:10px;">Metric Heatmap Key:</div>
-                        <div style="display:flex; flex-direction:column; gap:8px;">
-                            <div style="display:flex; align-items:center; gap:8px;"><div style="width:40px; height:8px; background:linear-gradient(to right, #eff6ff, #1d4ed8); border-radius:4px;"></div> <span style="font-size:10px;">Support</span></div>
-                            <div style="display:flex; align-items:center; gap:8px;"><div style="width:40px; height:8px; background:linear-gradient(to right, #fef2f2, #b91c1c); border-radius:4px;"></div> <span style="font-size:10px;">Confidence</span></div>
-                        </div>
+                    <div style="flex:1; font-size:10px; color:#64748b;">
+                        <b>Heatmap Key:</b><br>
+                        <div style="width:60px; height:6px; background:linear-gradient(to right, #eff6ff, #1d4ed8); border-radius:3px; margin:4px 0;"></div> Support<br>
+                        <div style="width:60px; height:6px; background:linear-gradient(to right, #fef2f2, #b91c1c); border-radius:3px; margin:4px 0;"></div> Confidence
                     </div>
                 </div>
             </div>
-        """)
-
-# --- All Modals (Restored) ---
-SPECIALIST_MAP = {
-    'Hypertension': {'role': 'Cardiologist', 'qualifier': 'Expert in vascular tension.'},
-    'Diabetes': {'role': 'Endocrinologist', 'qualifier': 'Expert in metabolic regulation.'},
-    'Asthma': {'role': 'Pulmonologist', 'qualifier': 'Specializes in airway management.'},
-}
-
-st_html(f"""
-    <div id="appointmentsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:500px;"><h3>Upcoming Appointments</h3><p>Oct 24 - Endocrinology</p><p>Oct 27 - Cardiology</p><button id="closeApps" style="margin-top:10px;">Close</button></div>
-    </div>
-    <div id="scheduleModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:500px;"><h3>Daily Schedule</h3><p>08:00 - Morning Vitals</p><p>12:00 - Glucose Check</p><button id="closeSched" style="margin-top:10px;">Close</button></div>
-    </div>
-    <div id="labsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:600px;"><h3>Labs Results</h3><p>HbA1c: 6.8% (High)</p><p>LDL: 112 mg/dL (High)</p><button id="closeLabs" style="margin-top:10px;">Close</button></div>
+        </div>
     </div>
 """)
 
-# --- JS Logic ---
-st_html("""
-<script>
-    const p = window.parent.document;
-    const bindModal = (btnId, modalId, closeId) => {
-        const btn = p.getElementById(btnId);
-        const modal = p.getElementById(modalId);
-        const close = p.getElementById(closeId);
-        if(btn && modal) {
-            btn.onclick = () => modal.style.display = 'flex';
-            if(close) close.onclick = () => modal.style.display = 'none';
-        }
-    };
-    bindModal('advisoryBtn', 'advisoryModal', 'closeAdvisoryBtn');
-    bindModal('navAppointments', 'appointmentsModal', 'closeApps');
-    bindModal('navSchedule', 'scheduleModal', 'closeSched');
-    bindModal('navLabs', 'labsModal', 'closeLabs');
-    
-    // Live Vitals
-    setInterval(() => {
-        const hr = p.getElementById('liveHR');
-        const br = p.getElementById('liveBrain');
-        const te = p.getElementById('liveTemp');
-        if(hr) hr.innerText = 80 + Math.floor(Math.random() * 10);
-        if(br) br.innerText = 110 + Math.floor(Math.random() * 40);
-        if(te) te.innerText = (38.2 + Math.random() * 0.6).toFixed(1);
-    }, 2000);
-</script>
+# --- Selection Form (Atomic after main render) ---
+with st.container():
+    st_html('<div style="display:flex; gap:20px; margin-top:0px;">')
+    c1, c2 = st.columns([1, 1.4])
+    with c1:
+        st_html('<div class="glass-card" style="margin-top:0;"><h3>Pattern Selection</h3>')
+        with st.form("pattern_form"):
+            p = st.selectbox("Primary", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['primary_diag']))
+            s = st.selectbox("Secondary", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['secondary_diag']))
+            if st.form_submit_button("Update Analytics", type="primary"):
+                st.session_state['primary_diag'], st.session_state['secondary_diag'] = p, s
+                st.rerun()
+        st_html('</div>')
+    with c2:
+        st_html(f"""
+            <div class="glass-card" style="margin-top:0;">
+                <h3>Algorithm Comparison</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><div style="font-size:11px; color:#94a3b8;">Apriori</div><div style="font-size:22px; font-weight:700;">{time_apriori}s</div></div>
+                    <div style="width:1px; height:40px; background:#e2e8f0;"></div>
+                    <div><div style="font-size:11px; color:#94a3b8;">FP-Growth</div><div style="font-size:22px; font-weight:700;">{time_fp}s</div></div>
+                </div>
+                <div style="margin-top:15px; font-size:10px; color:#3b82f6; font-weight:700;">PROCESSED IN {time_fp*1000:.0f}ms • ZERO-FLICKER RENDERING</div>
+            </div>
+        """)
+    st_html('</div>')
+
+# --- Modals & JS ---
+st_html(f"""
+    <div id="advisoryModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#fff; width:900px; max-width:90%; border-radius:24px; padding:40px; box-shadow:0 40px 80px rgba(0,0,0,0.15); position:relative;">
+            <div id="closeModal" style="position:absolute; top:20px; right:20px; cursor:pointer; font-size:24px;">✕</div>
+            <h2>Multi-Disciplinary Board</h2>
+            <p>Clinical specialist mapping for: {st.session_state['primary_diag']}</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;">
+                <div style="background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0;">
+                    <h4 style="margin-top:0;">Clinical Strength</h4>
+                    <div>Max Lift: {filtered_rules.iloc[0]['lift'] if len(filtered_rules)>0 else 0:.2f}</div>
+                    <div>Confidence: {filtered_rules.iloc[0]['confidence'] if len(filtered_rules)>0 else 0:.2f}</div>
+                </div>
+                <div>{specialists_html}</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const doc = window.parent.document;
+        const trig = doc.getElementById('advisoryTrigger');
+        const modal = doc.getElementById('advisoryModal');
+        const close = doc.getElementById('closeModal');
+        if(trig && modal) {{
+            trig.onclick = () => modal.style.display = 'flex';
+            close.onclick = () => modal.style.display = 'none';
+        }}
+        setInterval(() => {{
+            const h = doc.getElementById('liveHR');
+            const b = doc.getElementById('liveBrain');
+            const t = doc.getElementById('liveTemp');
+            if(h) h.innerText = 80 + Math.floor(Math.random() * 10);
+            if(b) b.innerText = 110 + Math.floor(Math.random() * 40);
+            if(t) t.innerText = (38.2 + Math.random() * 0.6).toFixed(1);
+        }}, 2000);
+    </script>
 """)
