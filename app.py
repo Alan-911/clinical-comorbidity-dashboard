@@ -79,7 +79,7 @@ if st.session_state['secondary_diag'] != "All":
     filtered = filtered[filtered['consequents'].apply(lambda x: st.session_state['secondary_diag'] in str(x))]
 filtered = filtered.sort_values('lift', ascending=False)
 
-# --- CSS & Nav ---
+# --- CSS, Nav & All Modals in ONE block (same iframe = modals work) ---
 st_html(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -95,17 +95,68 @@ st_html(f"""
     @keyframes moveEKG {{ from {{ background-position: 0 0; }} to {{ background-position: -100px 0; }} }}
     .timeline-item {{ margin-bottom: 15px; padding-left: 15px; border-left: 2px solid #e2e8f0; position: relative; }}
     .timeline-item::before {{ content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; }}
+    .cd-overlay {{ display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.55); backdrop-filter:blur(10px); z-index:9999; align-items:center; justify-content:center; }}
+    .cd-modal {{ background:#fff; border-radius:20px; padding:35px; max-width:90%; position:relative; box-shadow:0 30px 80px rgba(0,0,0,0.2); max-height:85vh; overflow-y:auto; }}
+    .cd-close {{ position:absolute; top:15px; right:18px; cursor:pointer; font-size:22px; color:#64748b; background:none; border:none; line-height:1; }}
 </style>
 {bg_html}
 <div class="navbar">
     <div style="font-weight:700; font-size:20px;">⚕️ Clinical Comorbidity &amp; Treatment Patterns</div>
     <div style="display:flex; gap:20px; font-size:13px; font-weight:600; color:#64748b;">
         <span style="cursor:pointer;">Dashboard</span>
-        <span id="navAppointments" style="cursor:pointer;">Appointments</span>
-        <span id="navSchedule" style="cursor:pointer;">Schedule</span>
-        <span id="navLabs" style="cursor:pointer;">Labs</span>
+        <span onclick="document.getElementById('apptModal').style.display='flex'" style="cursor:pointer;">Appointments</span>
+        <span onclick="document.getElementById('schedModal').style.display='flex'" style="cursor:pointer;">Schedule</span>
+        <span onclick="document.getElementById('labsModal').style.display='flex'" style="cursor:pointer;">Labs</span>
     </div>
     <div style="text-align:right;"><div style="font-size:10px; font-weight:800;">PATIENT #2440</div><div style="font-size:9px; color:#3b82f6;">CONNECTED</div></div>
+</div>
+<div id="apptModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
+  <div class="cd-modal" style="width:520px;"><button class="cd-close" onclick="document.getElementById('apptModal').style.display='none'">✕</button>
+    <h3 style="margin-top:0;">Upcoming Appointments</h3>
+    <div style="border-left:3px solid #3b82f6;padding:10px 15px;margin-bottom:10px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>Oct 24</b> — Endocrinology Follow-up</div>
+    <div style="border-left:3px solid #ef4444;padding:10px 15px;margin-bottom:10px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>Nov 3</b> — Cardiology Review</div>
+    <div style="border-left:3px solid #f59e0b;padding:10px 15px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>Nov 18</b> — Routine Labs</div>
+  </div>
+</div>
+<div id="schedModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
+  <div class="cd-modal" style="width:520px;"><button class="cd-close" onclick="document.getElementById('schedModal').style.display='none'">✕</button>
+    <h3 style="margin-top:0;">Daily Schedule</h3>
+    <div style="border-left:3px solid #3b82f6;padding:10px 15px;margin-bottom:8px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>08:00</b> — Morning Vitals</div>
+    <div style="border-left:3px solid #10b981;padding:10px 15px;margin-bottom:8px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>10:30</b> — Medication Review</div>
+    <div style="border-left:3px solid #f59e0b;padding:10px 15px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>14:00</b> — Specialist Consultation</div>
+  </div>
+</div>
+<div id="labsModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
+  <div class="cd-modal" style="width:600px;"><button class="cd-close" onclick="document.getElementById('labsModal').style.display='none'">✕</button>
+    <h3 style="margin-top:0;">Lab Results</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr style="background:#0f172a;color:white;"><th style="padding:8px;">Test</th><th style="padding:8px;">Result</th><th style="padding:8px;">Status</th></tr>
+      <tr style="background:#f8fafc;"><td style="padding:8px;">HbA1c</td><td style="padding:8px;">7.2%</td><td style="padding:8px;color:#f59e0b;">⚠ Monitor</td></tr>
+      <tr><td style="padding:8px;">LDL</td><td style="padding:8px;">112 mg/dL</td><td style="padding:8px;color:#ef4444;">✗ High</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:8px;">eGFR</td><td style="padding:8px;">78 mL/min</td><td style="padding:8px;color:#10b981;">✓ Normal</td></tr>
+    </table>
+  </div>
+</div>
+<div id="advisoryModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
+  <div class="cd-modal" style="width:750px;"><button class="cd-close" onclick="document.getElementById('advisoryModal').style.display='none'">✕</button>
+    <h2 style="margin-top:0;">Specialist Advisory Board</h2>
+    <hr style="border:0;border-top:1px solid #e2e8f0;margin:15px 0;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div style="background:#f8fafc;padding:20px;border-radius:12px;"><h4 style="margin-top:0;">Recommended Specialists</h4><p>👨‍⚕️ Endocrinologist<br>🫀 Cardiologist<br>🫁 Pulmonologist</p></div>
+      <div style="background:#f8fafc;padding:20px;border-radius:12px;"><h4 style="margin-top:0;">Evidence Summary</h4><p>High Lift Chain detected. Confidence &gt;80%.<br>Multi-specialty review recommended.</p></div>
+    </div>
+  </div>
+</div>
+<div id="demoModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
+  <div class="cd-modal" style="width:600px;"><button class="cd-close" onclick="document.getElementById('demoModal').style.display='none'">✕</button>
+    <h3 style="margin-top:0;">Demographic Comorbidity Insights</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr style="background:#0f172a;color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr>
+      <tr style="background:#f8fafc;"><td style="padding:8px;">Senior (65+)</td><td style="padding:8px;">Heart Disease</td><td style="padding:8px;">82%</td></tr>
+      <tr><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Diabetes</td><td style="padding:8px;">75%</td></tr>
+      <tr style="background:#f8fafc;"><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Hypertension</td><td style="padding:8px;">71%</td></tr>
+    </table>
+  </div>
 </div>
 """)
 
@@ -125,17 +176,17 @@ with col1:
     
     # 2. Demographic Patterns
     st_html(f"""
-        <div id="demoBtn" class="glass-card" style="cursor:pointer; text-align:center; padding:15px; border:1px solid rgba(255,255,255,0.6);">
+        <div onclick="document.getElementById('demoModal').style.display='flex'" class="glass-card" style="cursor:pointer; text-align:center; padding:15px; border:1px solid rgba(255,255,255,0.6);">
             <h3 style="margin:0;">Demographic Comorbidity Patterns</h3>
         </div>
     """)
     
     # 3. Consult Card
     st_html(f"""
-        <div class="glass-card" style="border-left:4px solid #3b82f6;" id="advisoryBtn">
+        <div onclick="document.getElementById('advisoryModal').style.display='flex'" class="glass-card" style="border-left:4px solid #3b82f6; cursor:pointer;">
             <h3>Multi-Disciplinary Consult</h3>
             <p style="font-size:12px; color:#64748b;">AI-assisted specialist board recommendations.</p>
-            <div style="font-size:11px; font-weight:700; color:#3b82f6; cursor:pointer;">View Insights &rarr;</div>
+            <div style="font-size:11px; font-weight:700; color:#3b82f6;">View Insights &rarr;</div>
         </div>
     """)
     
@@ -227,111 +278,35 @@ with col3:
             </div>
         """)
 
-# --- ALL MODALS & JS (single block) ---
-st_html(f"""
-    <div id="advisoryModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:800px; max-width:90%; max-height:85vh; overflow-y:auto; position:relative;">
-            <div id="closeAdvisoryBtn" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
-            <h2 style="margin-top:0;">Specialist Advisory Board</h2>
-            <hr style="border:0; border-top:1px solid #e2e8f0; margin:15px 0;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-                <div style="background:#f8fafc; padding:20px; border-radius:12px;"><h4 style="margin-top:0;">Recommended Specialists</h4><p>👨‍⚕️ Endocrinologist<br>🫀 Cardiologist<br>🫁 Pulmonologist</p></div>
-                <div style="background:#f8fafc; padding:20px; border-radius:12px;"><h4 style="margin-top:0;">Evidence Summary</h4><p>High Lift Chain detected. Confidence &gt;80%.<br>Consider multi-specialty review.</p></div>
-            </div>
-        </div>
-    </div>
-    <div id="demoModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:600px; position:relative;">
-            <div id="closeDemo" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
-            <h3>Demographic Comorbidity Insights</h3>
-            <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                <tr style="background:#0f172a; color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr>
-                <tr style="background:#f8fafc;"><td style="padding:8px;">Senior (65+)</td><td style="padding:8px;">Heart Disease</td><td style="padding:8px;">82%</td></tr>
-                <tr><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Diabetes</td><td style="padding:8px;">75%</td></tr>
-                <tr style="background:#f8fafc;"><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Hypertension</td><td style="padding:8px;">71%</td></tr>
-            </table>
-        </div>
-    </div>
-    <div id="appointmentsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:520px; position:relative;">
-            <div id="closeApps" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
-            <h3>Upcoming Appointments</h3>
-            <div style="border-left:3px solid #3b82f6; padding:10px 15px; margin-bottom:10px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>Oct 24</b> — Endocrinology Follow-up</div>
-            <div style="border-left:3px solid #ef4444; padding:10px 15px; margin-bottom:10px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>Nov 3</b> — Cardiology Review</div>
-            <div style="border-left:3px solid #f59e0b; padding:10px 15px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>Nov 18</b> — Routine Labs</div>
-        </div>
-    </div>
-    <div id="scheduleModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:520px; position:relative;">
-            <div id="closeSched" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
-            <h3>Daily Schedule</h3>
-            <div style="border-left:3px solid #3b82f6; padding:10px 15px; margin-bottom:8px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>08:00</b> — Morning Vitals Check</div>
-            <div style="border-left:3px solid #10b981; padding:10px 15px; margin-bottom:8px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>10:30</b> — Medication Review</div>
-            <div style="border-left:3px solid #f59e0b; padding:10px 15px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>14:00</b> — Specialist Consultation</div>
-        </div>
-    </div>
-    <div id="labsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:600px; position:relative;">
-            <div id="closeLabs" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
-            <h3>Lab Results</h3>
-            <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                <tr style="background:#0f172a; color:white;"><th style="padding:8px;">Test</th><th style="padding:8px;">Result</th><th style="padding:8px;">Status</th></tr>
-                <tr style="background:#f8fafc;"><td style="padding:8px;">HbA1c</td><td style="padding:8px;">7.2%</td><td style="padding:8px; color:#f59e0b;">⚠ Monitor</td></tr>
-                <tr><td style="padding:8px;">LDL</td><td style="padding:8px;">112 mg/dL</td><td style="padding:8px; color:#ef4444;">✗ High</td></tr>
-                <tr style="background:#f8fafc;"><td style="padding:8px;">eGFR</td><td style="padding:8px;">78 mL/min</td><td style="padding:8px; color:#10b981;">✓ Normal</td></tr>
-            </table>
-        </div>
-    </div>
-    <script>
-        (function() {{
-            const doc = window.parent.document;
-            const bind = (btnId, modalId, closeId) => {{
-                const btn = doc.getElementById(btnId);
-                const modal = doc.getElementById(modalId);
-                const close = doc.getElementById(closeId);
-                if (btn && modal) {{
-                    btn.onclick = () => {{ modal.style.display = 'flex'; }};
-                }}
-                if (close && modal) {{
-                    close.onclick = () => {{ modal.style.display = 'none'; }};
-                }}
-                if (modal) {{
-                    modal.onclick = (e) => {{ if (e.target === modal) modal.style.display = 'none'; }};
-                }}
-            }};
-            bind('advisoryBtn', 'advisoryModal', 'closeAdvisoryBtn');
-            bind('demoBtn', 'demoModal', 'closeDemo');
-            bind('navAppointments', 'appointmentsModal', 'closeApps');
-            bind('navSchedule', 'scheduleModal', 'closeSched');
-            bind('navLabs', 'labsModal', 'closeLabs');
-            // Live vitals
-            setInterval(() => {{
-                const hr = doc.getElementById('liveHR');
-                const br = doc.getElementById('liveBrain');
-                const tp = doc.getElementById('liveTemp');
-                if (hr) hr.innerText = 78 + Math.floor(Math.random() * 12);
-                if (br) br.innerText = 110 + Math.floor(Math.random() * 40);
-                if (tp) tp.innerText = (38.1 + Math.random() * 0.8).toFixed(1);
-            }}, 2000);
-            // SVG Zoom
-            let scale = 1;
-            const svg = doc.getElementById('flowSvg');
-            const zoomIn = doc.getElementById('zoomIn');
-            const zoomOut = doc.getElementById('zoomOut');
-            const zoomReset = doc.getElementById('zoomReset');
-            const applyZoom = () => {{ if(svg) svg.style.transform = 'scale(' + scale + ')'; }};
-            if (zoomIn) zoomIn.onclick = () => {{ scale = Math.min(scale + 0.2, 3); applyZoom(); }};
-            if (zoomOut) zoomOut.onclick = () => {{ scale = Math.max(scale - 0.2, 0.4); applyZoom(); }};
-            if (zoomReset) zoomReset.onclick = () => {{ scale = 1; applyZoom(); }};
-            // Scroll-to-zoom on SVG container
-            const svgCont = doc.getElementById('svgContainer');
-            if (svgCont) {{
-                svgCont.addEventListener('wheel', (e) => {{
-                    e.preventDefault();
-                    scale = e.deltaY < 0 ? Math.min(scale + 0.1, 3) : Math.max(scale - 0.1, 0.4);
-                    applyZoom();
-                }}, {{passive: false}});
-            }}
-        }})();
-    </script>
-""")
+
+# --- VITALS ANIMATION & ZOOM JS (same iframe as vitals/flowchart) ---
+st_html("""
+<script>
+(function() {
+    setInterval(function() {
+        var hr = document.getElementById('liveHR');
+        var br = document.getElementById('liveBrain');
+        var tp = document.getElementById('liveTemp');
+        if (hr) hr.innerText = 78 + Math.floor(Math.random() * 12);
+        if (br) br.innerText = 110 + Math.floor(Math.random() * 40);
+        if (tp) tp.innerText = (38.1 + Math.random() * 0.8).toFixed(1);
+    }, 2000);
+    var scale = 1;
+    var svg = document.getElementById('flowSvg');
+    var zi = document.getElementById('zoomIn');
+    var zo = document.getElementById('zoomOut');
+    var zr = document.getElementById('zoomReset');
+    function applyZoom() { if (svg) svg.style.transform = 'scale(' + scale + ')'; }
+    if (zi) zi.onclick = function() { scale = Math.min(scale + 0.2, 3); applyZoom(); };
+    if (zo) zo.onclick = function() { scale = Math.max(scale - 0.2, 0.4); applyZoom(); };
+    if (zr) zr.onclick = function() { scale = 1; applyZoom(); };
+    var cont = document.getElementById('svgContainer');
+    if (cont) {
+        cont.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            scale = e.deltaY < 0 ? Math.min(scale + 0.1, 3) : Math.max(scale - 0.1, 0.4);
+            applyZoom();
+        }, {passive: false});
+    }
+})();
+</script>
