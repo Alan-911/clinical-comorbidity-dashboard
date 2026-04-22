@@ -98,9 +98,12 @@ st_html(f"""
 </style>
 {bg_html}
 <div class="navbar">
-    <div style="font-weight:700; font-size:20px;">⚕️ Clinical Comorbidity & Treatment Patterns</div>
+    <div style="font-weight:700; font-size:20px;">⚕️ Clinical Comorbidity &amp; Treatment Patterns</div>
     <div style="display:flex; gap:20px; font-size:13px; font-weight:600; color:#64748b;">
-        <span>Dashboard</span><span>Appointments</span><span>Schedule</span><span>Labs</span>
+        <span style="cursor:pointer;">Dashboard</span>
+        <span id="navAppointments" style="cursor:pointer;">Appointments</span>
+        <span id="navSchedule" style="cursor:pointer;">Schedule</span>
+        <span id="navLabs" style="cursor:pointer;">Labs</span>
     </div>
     <div style="text-align:right;"><div style="font-size:10px; font-weight:800;">PATIENT #2440</div><div style="font-size:9px; color:#3b82f6;">CONNECTED</div></div>
 </div>
@@ -157,9 +160,9 @@ with col3:
             <div class="vital-card"><div style="font-size:11px; color:#94a3b8;">Events</div><div style="font-size:24px; font-weight:700;">3.2</div><div class="ekg-line" style="background:linear-gradient(90deg, transparent, #eab308, transparent);"></div></div>
         </div>
         <div style="display:flex; gap:10px; margin-bottom:20px;">
-            <div class="vital-card">Heart: 82bpm ❤</div>
-            <div class="vital-card">Brain: 120Hz 🧠</div>
-            <div class="vital-card">Temp: 38.5°C 🌡</div>
+            <div class="vital-card">Heart: <span id="liveHR">82</span>bpm ❤</div>
+            <div class="vital-card">Brain: <span id="liveBrain">120</span>Hz 🧠</div>
+            <div class="vital-card">Temp: <span id="liveTemp">38.5</span>°C 🌡</div>
         </div>
     """)
     
@@ -174,16 +177,22 @@ with col3:
     
     st_html(f"""
         <div class="glass-card">
-            <h3>Comorbidity Heatmap & Graph Hybrid</h3>
+            <h3>Comorbidity Heatmap &amp; Graph Hybrid</h3>
             <div style="margin-bottom:20px;">{matrix_html}</div>
             <div style="display:flex; gap:20px;">
-                <div style="flex:1.2; height:180px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center;">
-                    <svg width="100%" height="100%" viewBox="0 0 300 150">
-                        <line x1="50" y1="75" x2="150" y2="40" stroke="#94a3b8" stroke-width="2" />
-                        <line x1="50" y1="75" x2="150" y2="110" stroke="#94a3b8" stroke-width="2" />
-                        <rect x="10" y="60" width="80" height="30" rx="15" fill="#3b82f6" /><text x="50" y="79" fill="white" font-size="10" text-anchor="middle">Profile</text>
-                        <rect x="150" y="25" width="80" height="30" rx="15" fill="#ef4444" /><text x="190" y="44" fill="white" font-size="10" text-anchor="middle">Condition</text>
-                        <rect x="150" y="95" width="80" height="30" rx="15" fill="#f59e0b" /><text x="190" y="114" fill="white" font-size="10" text-anchor="middle">Pathway</text>
+                <div id="svgContainer" style="flex:1.2; height:220px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden; position:relative;">
+                    <div style="position:absolute; top:6px; right:6px; display:flex; gap:4px; z-index:10;">
+                        <button id="zoomIn" style="width:24px; height:24px; border-radius:50%; border:1px solid #e2e8f0; background:white; cursor:pointer; font-size:14px; line-height:1;">+</button>
+                        <button id="zoomOut" style="width:24px; height:24px; border-radius:50%; border:1px solid #e2e8f0; background:white; cursor:pointer; font-size:14px; line-height:1;">−</button>
+                        <button id="zoomReset" style="width:24px; height:24px; border-radius:50%; border:1px solid #e2e8f0; background:white; cursor:pointer; font-size:10px; line-height:1;">↺</button>
+                    </div>
+                    <svg id="flowSvg" width="100%" height="100%" viewBox="0 0 300 150" style="transform-origin:center; transition:transform 0.2s;">
+                        <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
+                        <line x1="50" y1="75" x2="145" y2="38" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+                        <line x1="50" y1="75" x2="145" y2="112" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+                        <rect x="10" y="60" width="80" height="30" rx="15" fill="#3b82f6"/><text x="50" y="79" fill="white" font-size="10" text-anchor="middle">Profile</text>
+                        <rect x="150" y="23" width="90" height="30" rx="15" fill="#ef4444"/><text x="195" y="42" fill="white" font-size="10" text-anchor="middle">Condition</text>
+                        <rect x="150" y="97" width="90" height="30" rx="15" fill="#f59e0b"/><text x="195" y="116" fill="white" font-size="10" text-anchor="middle">Pathway</text>
                     </svg>
                 </div>
                 <div style="flex:1; font-size:10px;">
@@ -218,74 +227,111 @@ with col3:
             </div>
         """)
 
-# --- MODAL LOGIC (INTERNAL) ---
-if st.session_state['show_advisory']:
-    st_html("""
-    <div style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:99999; display:flex; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:800px; max-width:90%; height:80vh; overflow-y:auto; position:relative;">
-            <h2 style="margin-top:0;">Specialist Advisory Board</h2>
-            <p>Clinical mapping and evidence-based recommendations.</p>
-            <hr style="border:0; border-top:1px solid #e2e8f0; margin:20px 0;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-                <div style="background:#f8fafc; padding:15px; border-radius:12px;"><h4>Recommended Specialists</h4><p>Endocrinologist, Cardiologist</p></div>
-                <div style="background:#f8fafc; padding:15px; border-radius:12px;"><h4>Evidence Metrics</h4><p>High Lift Chain detected in current cluster.</p></div>
-            </div>
-            <div style="text-align:right; margin-top:30px;"><button id="closeAdvisoryBtn" style="padding:8px 20px; border-radius:8px; background:#0f172a; color:white; border:none; cursor:pointer;">Close Board</button></div>
-        </div>
-    </div>
-""")
-
-# --- MODALS & JS ---
+# --- ALL MODALS & JS (single block) ---
 st_html(f"""
-    <div id="demoModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:600px;">
-            <h3>Demographic Insights</h3>
-            <p>Live analysis of comorbid clusters across patient demographics.</p>
-            <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                <tr style="background:#0f172a; color:white;"><th>Profile</th><th>Condition</th><th>Conf</th></tr>
-                <tr><td>Age: Senior</td><td>Heart Disease</td><td>0.82</td></tr>
-                <tr><td>Age: Adult</td><td>Diabetes</td><td>0.75</td></tr>
-            </table>
-            <button id="closeDemo" style="margin-top:20px; padding:10px; border-radius:8px; border:none; background:#0f172a; color:white; cursor:pointer;">Close</button>
+    <div id="advisoryModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:800px; max-width:90%; max-height:85vh; overflow-y:auto; position:relative;">
+            <div id="closeAdvisoryBtn" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
+            <h2 style="margin-top:0;">Specialist Advisory Board</h2>
+            <hr style="border:0; border-top:1px solid #e2e8f0; margin:15px 0;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <div style="background:#f8fafc; padding:20px; border-radius:12px;"><h4 style="margin-top:0;">Recommended Specialists</h4><p>👨‍⚕️ Endocrinologist<br>🫀 Cardiologist<br>🫁 Pulmonologist</p></div>
+                <div style="background:#f8fafc; padding:20px; border-radius:12px;"><h4 style="margin-top:0;">Evidence Summary</h4><p>High Lift Chain detected. Confidence &gt;80%.<br>Consider multi-specialty review.</p></div>
+            </div>
         </div>
     </div>
-    <div id="appointmentsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:500px;"><h3>Appointments</h3><p>Follow-up - Oct 24</p><button id="closeApps">Close</button></div>
+    <div id="demoModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:600px; position:relative;">
+            <div id="closeDemo" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
+            <h3>Demographic Comorbidity Insights</h3>
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <tr style="background:#0f172a; color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr>
+                <tr style="background:#f8fafc;"><td style="padding:8px;">Senior (65+)</td><td style="padding:8px;">Heart Disease</td><td style="padding:8px;">82%</td></tr>
+                <tr><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Diabetes</td><td style="padding:8px;">75%</td></tr>
+                <tr style="background:#f8fafc;"><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Hypertension</td><td style="padding:8px;">71%</td></tr>
+            </table>
+        </div>
     </div>
-    <div id="scheduleModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:500px;"><h3>Schedule</h3><p>08:00 - Morning Vitals</p><button id="closeSched">Close</button></div>
+    <div id="appointmentsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:520px; position:relative;">
+            <div id="closeApps" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
+            <h3>Upcoming Appointments</h3>
+            <div style="border-left:3px solid #3b82f6; padding:10px 15px; margin-bottom:10px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>Oct 24</b> — Endocrinology Follow-up</div>
+            <div style="border-left:3px solid #ef4444; padding:10px 15px; margin-bottom:10px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>Nov 3</b> — Cardiology Review</div>
+            <div style="border-left:3px solid #f59e0b; padding:10px 15px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>Nov 18</b> — Routine Labs</div>
+        </div>
+    </div>
+    <div id="scheduleModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:520px; position:relative;">
+            <div id="closeSched" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
+            <h3>Daily Schedule</h3>
+            <div style="border-left:3px solid #3b82f6; padding:10px 15px; margin-bottom:8px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>08:00</b> — Morning Vitals Check</div>
+            <div style="border-left:3px solid #10b981; padding:10px 15px; margin-bottom:8px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>10:30</b> — Medication Review</div>
+            <div style="border-left:3px solid #f59e0b; padding:10px 15px; background:#f8fafc; border-radius:0 8px 8px 0;"><b>14:00</b> — Specialist Consultation</div>
+        </div>
+    </div>
+    <div id="labsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.4); backdrop-filter:blur(12px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:600px; position:relative;">
+            <div id="closeLabs" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:20px; color:#64748b;">✕</div>
+            <h3>Lab Results</h3>
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <tr style="background:#0f172a; color:white;"><th style="padding:8px;">Test</th><th style="padding:8px;">Result</th><th style="padding:8px;">Status</th></tr>
+                <tr style="background:#f8fafc;"><td style="padding:8px;">HbA1c</td><td style="padding:8px;">7.2%</td><td style="padding:8px; color:#f59e0b;">⚠ Monitor</td></tr>
+                <tr><td style="padding:8px;">LDL</td><td style="padding:8px;">112 mg/dL</td><td style="padding:8px; color:#ef4444;">✗ High</td></tr>
+                <tr style="background:#f8fafc;"><td style="padding:8px;">eGFR</td><td style="padding:8px;">78 mL/min</td><td style="padding:8px; color:#10b981;">✓ Normal</td></tr>
+            </table>
+        </div>
     </div>
     <script>
-        const doc = window.parent.document;
-        const bind = (id, mid, cid) => {{
-            const b = doc.getElementById(id); const m = doc.getElementById(mid); const c = doc.getElementById(cid);
-            if(b && m) {{ b.onclick = () => m.style.display = 'flex'; if(c) c.onclick = () => m.style.display = 'none'; }}
-        }};
-        bind('advisoryBtn', 'advisoryModal', 'closeAdvisoryBtn');
-        bind('demoBtn', 'demoModal', 'closeDemo');
-        bind('navAppointments', 'appointmentsModal', 'closeApps');
-        bind('navSchedule', 'scheduleModal', 'closeSched');
-        setInterval(() => {{
-            const h = doc.getElementById('liveHR'); const b = doc.getElementById('liveBrain'); const t = doc.getElementById('liveTemp');
-            if(h) h.innerText = 80 + Math.floor(Math.random() * 10);
-            if(b) b.innerText = 110 + Math.floor(Math.random() * 40);
-            if(t) t.innerText = (38.2 + Math.random() * 0.6).toFixed(1);
-        }}, 2000);
+        (function() {{
+            const doc = window.parent.document;
+            const bind = (btnId, modalId, closeId) => {{
+                const btn = doc.getElementById(btnId);
+                const modal = doc.getElementById(modalId);
+                const close = doc.getElementById(closeId);
+                if (btn && modal) {{
+                    btn.onclick = () => {{ modal.style.display = 'flex'; }};
+                }}
+                if (close && modal) {{
+                    close.onclick = () => {{ modal.style.display = 'none'; }};
+                }}
+                if (modal) {{
+                    modal.onclick = (e) => {{ if (e.target === modal) modal.style.display = 'none'; }};
+                }}
+            }};
+            bind('advisoryBtn', 'advisoryModal', 'closeAdvisoryBtn');
+            bind('demoBtn', 'demoModal', 'closeDemo');
+            bind('navAppointments', 'appointmentsModal', 'closeApps');
+            bind('navSchedule', 'scheduleModal', 'closeSched');
+            bind('navLabs', 'labsModal', 'closeLabs');
+            // Live vitals
+            setInterval(() => {{
+                const hr = doc.getElementById('liveHR');
+                const br = doc.getElementById('liveBrain');
+                const tp = doc.getElementById('liveTemp');
+                if (hr) hr.innerText = 78 + Math.floor(Math.random() * 12);
+                if (br) br.innerText = 110 + Math.floor(Math.random() * 40);
+                if (tp) tp.innerText = (38.1 + Math.random() * 0.8).toFixed(1);
+            }}, 2000);
+            // SVG Zoom
+            let scale = 1;
+            const svg = doc.getElementById('flowSvg');
+            const zoomIn = doc.getElementById('zoomIn');
+            const zoomOut = doc.getElementById('zoomOut');
+            const zoomReset = doc.getElementById('zoomReset');
+            const applyZoom = () => {{ if(svg) svg.style.transform = 'scale(' + scale + ')'; }};
+            if (zoomIn) zoomIn.onclick = () => {{ scale = Math.min(scale + 0.2, 3); applyZoom(); }};
+            if (zoomOut) zoomOut.onclick = () => {{ scale = Math.max(scale - 0.2, 0.4); applyZoom(); }};
+            if (zoomReset) zoomReset.onclick = () => {{ scale = 1; applyZoom(); }};
+            // Scroll-to-zoom on SVG container
+            const svgCont = doc.getElementById('svgContainer');
+            if (svgCont) {{
+                svgCont.addEventListener('wheel', (e) => {{
+                    e.preventDefault();
+                    scale = e.deltaY < 0 ? Math.min(scale + 0.1, 3) : Math.max(scale - 0.1, 0.4);
+                    applyZoom();
+                }}, {{passive: false}});
+            }}
+        }})();
     </script>
-""")
-
-# --- JS For Triggers ---
-st_html("""
-<script>
-    const p = window.parent.document;
-    const viewBtn = p.getElementById('viewInsights');
-    if(viewBtn) {
-        viewBtn.onclick = () => {
-            // We use a small hack to trigger a Streamlit rerun with a state change
-            // In a real app we'd use a hidden streamlit button or similar.
-            // For this demo, let's just make it look like a modal.
-            window.parent.postMessage({type: 'streamlit:setComponentValue', value: true}, '*');
-        }
-    }
-</script>
 """)
