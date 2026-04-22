@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import time
-import pandas as pd
 import streamlit.components.v1 as components
 import os
 import base64
@@ -63,26 +62,21 @@ except Exception:
     bg_style = ""
     bg_html = ""
 
-# --- CSS Styling ---
+# --- Consolidated UI Core (Fixes Refreshing Flicker) ---
 st_html(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-    
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     header {{visibility: hidden;}}
     .block-container {{ padding: 1rem; max-width: 100%; position: relative; z-index: 1; }}
-    
     html, body, [class*="css"] {{ font-family: 'Inter', sans-serif; color: #0f172a; }}
-    
     .stApp {{
         background-color: #f8fafc;
         background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
         background-size: 40px 40px;
     }}
-    
     {bg_style}
-
     .navbar {{
         display: flex; align-items: center; justify-content: space-between; padding: 10px 40px;
         background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border-radius: 100px;
@@ -92,79 +86,48 @@ st_html(f"""
     .navbar-links {{ display: flex; gap: 15px; }}
     .nav-btn {{ padding: 10px 20px; border-radius: 50px; font-weight: 600; font-size: 14px; background: transparent; color: #475569; border: none; }}
     .nav-btn.active {{ background: #0f172a; color: white; }}
-
     .glass-card {{
         background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8);
         border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); margin-bottom: 20px; position: relative; z-index: 2;
     }}
-    
     h3 {{ font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 15px; margin-top: 0; }}
-    
-    /* Vitals & Animations */
     .vitals-row {{ display: flex; gap: 10px; margin-bottom: 20px; }}
     .vital-card {{ flex: 1; padding: 15px; border-radius: 15px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; }}
     .vital-label {{ font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 2px; }}
     .vital-value {{ font-size: 24px; font-weight: 700; color: #0f172a; }}
-    
     @keyframes heartbeat {{ 0% {{ transform: scale(1); }} 20% {{ transform: scale(1.25); }} 40% {{ transform: scale(1); }} 60% {{ transform: scale(1.15); }} 80% {{ transform: scale(1); }} 100% {{ transform: scale(1); }} }}
     .heart-icon {{ animation: heartbeat 1.5s infinite; display: inline-block; color: #ef4444; }}
-    
     @keyframes brainwave {{ 0% {{ opacity: 0.5; }} 50% {{ opacity: 1; text-shadow: 0 0 10px #eab308; }} 100% {{ opacity: 0.5; }} }}
     .brain-icon {{ animation: brainwave 2s infinite; display: inline-block; color: #eab308; }}
-    
-    .ekg-line {{
-        height: 30px; width: 100%; margin-top: 10px;
-        background: linear-gradient(90deg, transparent 0%, #ef4444 50%, transparent 100%);
-        background-size: 100px 100%; animation: moveEKG 1s linear infinite; opacity: 0.5;
-    }}
+    .ekg-line {{ height: 30px; width: 100%; margin-top: 10px; background: linear-gradient(90deg, transparent 0%, #ef4444 50%, transparent 100%); background-size: 100px 100%; animation: moveEKG 1s linear infinite; opacity: 0.5; }}
     @keyframes moveEKG {{ 0% {{ background-position: 0 0; }} 100% {{ background-position: -100px 0; }} }}
-    @keyframes brainPulse {{
-        0% {{ background-position: 0% 50%; opacity: 0.5; }}
-        50% {{ background-position: 100% 50%; opacity: 0.8; }}
-        100% {{ background-position: 0% 50%; opacity: 0.5; }}
-    }}
-    
-    /* Timeline */
     .timeline-item {{ margin-bottom: 15px; padding-left: 15px; border-left: 2px solid #e2e8f0; position: relative; }}
     .timeline-item::before {{ content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; }}
     .timeline-time {{ font-size: 12px; color: #94a3b8; font-weight: 600; }}
     .timeline-title {{ font-size: 14px; font-weight: 600; color: #0f172a; margin: 2px 0; }}
     .timeline-desc {{ font-size: 12px; color: #64748b; }}
-    
-    /* Form overrides for Pattern Selection */
     div[data-testid="stForm"] {{ border: none; padding: 0; background: transparent; }}
     div[data-baseweb="select"] {{ border-radius: 12px !important; background: #f8fafc !important; border: 1px solid #e2e8f0 !important; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important; transition: all 0.2s ease !important; }}
     div[data-baseweb="select"]:focus-within {{ border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important; }}
     button[data-testid="baseButton-primary"] {{ background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; color: white !important; width: 100% !important; border-radius: 12px !important; padding: 12px !important; font-weight: 700 !important; border: none !important; margin-top: 15px !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; text-transform: uppercase; letter-spacing: 0.5px; font-size: 12px !important; }}
-    button[data-testid="baseButton-primary"]:hover {{ transform: translateY(-1px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1) !important; }}
-    
-    @keyframes zoomIn {{
-        from {{ transform: translate(-50%, -50%) scale(0.9); opacity: 0; }}
-        to {{ transform: translate(-50%, -50%) scale(1); opacity: 1; }}
-    }}
+    @keyframes zoomIn {{ from {{ transform: translate(-50%, -50%) scale(0.9); opacity: 0; }} to {{ transform: translate(-50%, -50%) scale(1); opacity: 1; }} }}
     </style>
-""")
-
-if bg_html:
-    st_html(bg_html)
-
-# --- Top Navigation ---
-st_html("""
-<div class="navbar">
-    <div class="navbar-brand">
-        <span style="font-size: 24px;">⚕️</span> <span style="color:#0f172a; font-weight:700; font-size:20px; margin-left:5px;">Comorbidity & Treatment Patterns</span>
+    {bg_html if bg_html else ""}
+    <div class="navbar">
+        <div class="navbar-brand">
+            <span style="font-size: 24px;">⚕️</span> <span style="color:#0f172a; font-weight:700; font-size:20px; margin-left:5px;">Comorbidity & Treatment Patterns</span>
+        </div>
+        <div class="navbar-links">
+            <button id="navDashboard" class="nav-btn active">Dashboard</button>
+            <button id="navAppointments" class="nav-btn">Appointments</button>
+            <button id="navSchedule" class="nav-btn">Schedule</button>
+            <button id="navLabs" class="nav-btn">Labs Results</button>
+        </div>
+        <div id="navProfile" style="display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
+            <div style="width:35px; height:35px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; margin-bottom:2px;">👤</div>
+            <span style="font-size: 10px; font-weight: 700; color: #475569;">Patient's Profile</span>
+        </div>
     </div>
-    <div class="navbar-links">
-        <button id="navDashboard" class="nav-btn active">Dashboard</button>
-        <button id="navAppointments" class="nav-btn">Appointments</button>
-        <button id="navSchedule" class="nav-btn">Schedule</button>
-        <button id="navLabs" class="nav-btn">Labs Results</button>
-    </div>
-    <div id="navProfile" style="display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;">
-        <div style="width:35px; height:35px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; margin-bottom:2px;">👤</div>
-        <span style="font-size: 10px; font-weight: 700; color: #475569;">Patient's Profile</span>
-    </div>
-</div>
 """)
 
 # --- Live Data Mining & Timers ---
@@ -801,297 +764,165 @@ with col3:
                 <div class="vital-label">Avg. Events / Visit</div>
                 <div id="infoEvents" style="cursor:pointer; color:#3b82f6; font-size:12px;">ⓘ</div>
             </div>
-            <div class="vital-value" style="color: #0f172a;">{avg_events:.1f}</div>
+            <div class="vital-value" style="color: #0f172a;">{avg_events}</div>
             <div class="ekg-line" style="background: linear-gradient(90deg, transparent 0%, #eab308 50%, transparent 100%);"></div>
         </div>
     </div>
+
     <div class="vitals-row">
         <div class="vital-card">
             <div style="display:flex; justify-content:space-between;">
-                <div><div class="vital-label">Heart rate</div><div id="liveHR" class="vital-value">82 bpm</div></div>
-                <div class="heart-icon">❤</div>
+                <div><div class="vital-label">Heart rate</div><div class="vital-value" style="color: #0f172a;">82 bpm</div></div>
+                <div class="heart-icon" style="font-size:24px;">❤</div>
             </div>
             <div class="ekg-line"></div>
         </div>
         <div class="vital-card">
             <div style="display:flex; justify-content:space-between;">
-                <div><div class="vital-label">Brain activity</div><div id="liveBrain" class="vital-value">120 Hz</div></div>
-                <div class="brain-icon">🧠</div>
+                <div><div class="vital-label">Brain activity</div><div class="vital-value" style="color: #0f172a;">120 Hz</div></div>
+                <div class="brain-icon" style="font-size:24px;">🧠</div>
             </div>
-            <div style="height:30px; width:100%; margin-top:10px; background: linear-gradient(90deg, rgba(234, 179, 8, 0.1), rgba(234, 179, 8, 0.4), rgba(234, 179, 8, 0.1)); background-size: 200% 100%; animation: brainPulse 2s ease-in-out infinite;"></div>
+            <div class="ekg-line" style="background: linear-gradient(90deg, transparent 0%, #eab308 50%, transparent 100%);"></div>
         </div>
-        <div class="vital-card" style="background: {temp_bg}; border: 1px solid rgba(239, 68, 68, 0.1);">
+        <div class="vital-card" style="background: {temp_bg}; border: 1px solid {temp_color}33;">
             <div style="display:flex; justify-content:space-between;">
-                <div style="color:{temp_color};"><div class="vital-label">Temperature</div><div id="liveTemp" class="vital-value">{temp_val}°C</div></div>
-                <div style="color:{temp_color};">🌡</div>
+                <div><div class="vital-label">Temperature</div><div class="vital-value" style="color: {temp_color};">{temp_val}°C</div></div>
+                <div style="font-size:24px; color:{temp_color};">🌡</div>
+            </div>
+            <div class="ekg-line" style="background: linear-gradient(90deg, transparent 0%, {temp_color} 50%, transparent 100%);"></div>
+        </div>
+    </div>
+
+    <div class="glass-card" style="margin-top:20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+            <span style="font-size:24px;">⛓</span>
+            <h3 style="margin:0; font-size:18px;">Comorbidity Heatmap & Graph Hybrid</h3>
+        </div>
+        
+        <div style="margin-bottom:25px;">
+            <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:10px;">Clinical Metric Matrix</div>
+            <table style="width:100%; border-collapse: collapse; font-family: 'Inter', sans-serif;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                        <th style="padding: 12px 8px; text-align: left; font-size: 11px; font-weight: 800; color: #475569;">#</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 11px; font-weight: 800; color: #475569;">Metric Matrix ↕</th>
+                        <th style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 800; color: #475569;">Support ↕</th>
+                        <th style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 800; color: #475569;">Confidence ↕</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """)
+    
+    if rules_df is not None:
+        for i, (idx, row) in enumerate(rules_df.nlargest(5, 'confidence').iterrows()):
+            ant_c = clean_frozenset(row['antecedents'])
+            con_c = clean_frozenset(row['consequents'])
+            conf_pct = row['confidence'] * 100
+            
+            # Dynamic colors based on values
+            supp_color = f"rgba(15, 23, 42, {row['support']*5})"
+            conf_color = f"rgba(239, 68, 68, {row['confidence']})" if row['confidence'] > 0.8 else f"rgba(15, 23, 42, {row['confidence']})"
+            
+            st_html(f"""
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px 8px; font-size: 12px; font-weight: 700; color: #64748b;">{i+1}</td>
+                    <td style="padding: 12px 8px; font-size: 11px; color: #334155; font-weight: 600;">{ant_clean} &rarr; {con_clean}</td>
+                    <td style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 700; background: {supp_color}; color: {'white' if row['support'] > 0.1 else '#0f172a'};">{row['support']:.2f}</td>
+                    <td style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 700; background: {conf_color}; color: {'white' if row['confidence'] > 0.7 else '#0f172a'};">{row['confidence']:.2f}</td>
+                </tr>
+            """)
+            
+    st_html("""
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase;">Discovery Engine Meta</div>
+                <div style="background:#22c55e; width:8px; height:8px; border-radius:50%;"></div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div><div style="font-size:10px; color:#94a3b8;">Mining Logic</div><div style="font-size:12px; font-weight:700;">FP-Growth</div></div>
+                <div><div style="font-size:10px; color:#94a3b8;">Rec. Count</div><div style="font-size:12px; font-weight:700;">10,000+</div></div>
+                <div><div style="font-size:10px; color:#94a3b8;">Avg Support</div><div style="font-size:12px; font-weight:700;">0.042</div></div>
+                <div><div style="font-size:10px; color:#94a3b8;">System Status</div><div style="font-size:12px; font-weight:700; color:#22c55e;">Nominal</div></div>
             </div>
         </div>
     </div>
     """)
+
+# --- Step 4: Pattern Selection (Relocated to Footer for Minimalist Feel) ---
+with st.form("pattern_form"):
+    st_html("<h3 style='margin-bottom:15px;'>Pattern Selection Parameter Tuning</h3>")
+    c1, c2, c3 = st.columns(3)
+    p_diag = c1.selectbox("Primary Diagnosis Filter", ["All"] + all_items, index=0)
+    s_diag = c2.selectbox("Secondary Diagnosis Filter", ["All"] + all_items, index=0)
     
-    graph_placeholder = st.empty()
+    # Custom Select Logic for state management
+    if c3.form_submit_button("RE-MINE CLINICAL PATTERNS"):
+        st.session_state['primary_diag'] = p_diag
+        st.session_state['secondary_diag'] = s_diag
+        st.rerun()
+
+# --- Step 8: Modals JS Logic ---
+st_html("""
+<script>
+    // Helper to get Streamlit's iframe document
+    const doc = window.parent.document;
     
-    bottom_col1, bottom_col2 = st.columns([1, 1.4], gap="small")
-    with bottom_col1:
-        st_html(f"""
-        <div class="glass-card" style="padding: 25px; border-top: 4px solid #0f172a; position: relative;">
-            <div style="position: absolute; top: 15px; right: 20px; font-size: 20px; opacity: 0.1;">🔍</div>
-            <h3 style="margin-bottom: 5px; font-size: 18px; font-weight: 800;">Pattern Selection</h3>
-            <p style="font-size: 11px; color: #64748b; margin-bottom: 20px;">Refine analytics by selecting primary and secondary clinical focus.</p>
-        """)
-        with st.form("pattern_form"):
-            p_diag = st.selectbox("Primary Diagnosis", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['primary_diag']))
-            s_diag = st.selectbox("Secondary Condition", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['secondary_diag']))
-            submitted = st.form_submit_button("Update Analytics Board", type="primary")
-            if submitted:
-                st.session_state['primary_diag'] = p_diag
-                st.session_state['secondary_diag'] = s_diag
-                st.rerun()
-        st_html('</div>')
+    // Modal Selectors
+    const modals = {
+        demo: { btn: doc.getElementById('demoBtn'), modal: doc.getElementById('demoModal'), close: doc.getElementById('demoModalClose') },
+        advisory: { btn: doc.getElementById('advisoryBtn'), modal: doc.getElementById('advisoryModal'), close: doc.getElementById('closeAdvisoryBtn') },
+        appointments: { btn: doc.getElementById('navAppointments'), modal: doc.getElementById('appointmentsModal'), close: doc.getElementById('closeAppointments') },
+        schedule: { btn: doc.getElementById('navSchedule'), modal: doc.getElementById('scheduleModal'), close: doc.getElementById('closeSchedule') },
+        labs: { btn: doc.getElementById('navLabs'), modal: doc.getElementById('labsModal'), close: doc.getElementById('closeLabs') },
+        profile: { btn: doc.getElementById('navProfile'), modal: doc.getElementById('profileModal'), close: doc.getElementById('closeProfile') }
+    };
 
-    with bottom_col2:
-        st_html(f"""
-        <div class="glass-card" style="padding: 20px;">
-            <h3 style="display:flex; justify-content:space-between; align-items:center;">
-                <span>Algorithm Comparison</span>
-                <span id="infoAlgo" style="cursor:pointer; color:#3b82f6;">ⓘ</span>
-            </h3>
-            <div style="display:flex; justify-content:space-between;">
-                <div style="flex:1;">
-                    <div style="font-size:12px;">Apriori Runtime</div>
-                    <div style="font-size:24px; font-weight:700;">{time_apriori:.1f}s</div>
-                </div>
-                <div style="flex:1; border-left:1px solid #e2e8f0; padding-left:15px;">
-                    <div style="font-size:12px;">FP-Growth Runtime</div>
-                    <div style="font-size:24px; font-weight:700;">{time_fp:.1f}s</div>
-                </div>
-            </div>
-        </div>
-        """)
-
-    with graph_placeholder.container():
-        filtered_rules = get_rules_for_diagnosis(rules_df, st.session_state['primary_diag'], st.session_state['secondary_diag'])
-
-        if filtered_rules is not None and len(filtered_rules) > 0:
-            # --- 2. Metric Matrix ---
-            top_matrix_rules = filtered_rules.nlargest(5, 'lift').copy()
-            def format_rule(ant, con):
-                a_str = clean_frozenset(ant)
-                c_str = clean_frozenset(con)
-                return f"{a_str} &rarr; {c_str}"
-            top_matrix_rules['Metric Matrix ⬍'] = top_matrix_rules.apply(lambda x: format_rule(x['antecedents'], x['consequents']), axis=1)
-            df_display = top_matrix_rules[['Metric Matrix ⬍', 'support', 'confidence']].reset_index(drop=True)
-            
-            table_html = "<table style='width:100%; border-collapse: collapse; font-size:12px; color: #0f172a;'>"
-            table_html += "<tr><th style='text-align:left; font-size:14px; padding: 8px 5px; color: #0f172a; border-bottom: 2px solid #e2e8f0;'>#</th><th style='text-align:left; font-size:14px; padding: 8px 5px; color: #0f172a; border-bottom: 2px solid #e2e8f0;'>Metric Matrix ⬍</th><th style='text-align:center; font-size:14px; padding: 8px 5px; color: #0f172a; border-bottom: 2px solid #e2e8f0;'>Support ⬍</th><th style='text-align:center; font-size:14px; padding: 8px 5px; color: #0f172a; border-bottom: 2px solid #e2e8f0;'>Confidence ⬍</th></tr>"
-            
-            cmap_sup = plt.get_cmap('Blues')
-            cmap_conf = plt.get_cmap('Reds')
-            
-            for i, (idx, row) in enumerate(df_display.iterrows(), 1):
-                sup_val = row['support']
-                conf_val = row['confidence']
-                sup_norm = min(1.0, max(0.2, sup_val / (df_display['support'].max() if df_display['support'].max() > 0 else 1)))
-                conf_norm = min(1.0, max(0.2, conf_val / (df_display['confidence'].max() if df_display['confidence'].max() > 0 else 1)))
-                bg_sup = mcolors.to_hex(cmap_sup(sup_norm))
-                bg_conf = mcolors.to_hex(cmap_conf(conf_norm))
-                tc_sup = "#ffffff" if sup_norm > 0.5 else "#000000"
-                tc_conf = "#ffffff" if conf_norm > 0.5 else "#000000"
-                
-                table_html += f"<tr>"
-                table_html += f"<td style='padding:6px 5px; border-bottom: 1px solid #f1f5f9; font-weight:700;'>{i}</td>"
-                table_html += f"<td style='padding:6px 5px; border-bottom: 1px solid #f1f5f9;'>{row['Metric Matrix ⬍']}</td>"
-                table_html += f"<td style='background-color:{bg_sup}; color:{tc_sup}; text-align:center; padding:6px 0; border-bottom: 1px solid #f1f5f9;'>{sup_val:.2f}</td>"
-                table_html += f"<td style='background-color:{bg_conf}; color:{tc_conf}; text-align:center; padding:6px 0; border-bottom: 1px solid #f1f5f9;'>{conf_val:.2f}</td>"
-                table_html += "</tr>"
-            table_html += "</table>"
-            
-            # --- 3. Unified Layout (Restructured for Vertical Efficiency) ---
-            unified_html = f"""
-            <div class="glass-card" style="padding: 25px; margin-bottom: 20px;">
-                <h3 style="margin-bottom:20px; font-weight:700; font-size:20px; color:#0f172a;">⛓ Comorbidity Heatmap & Graph Hybrid</h3>
-                
-                <!-- Row 1: Horizontal Metric Matrix -->
-                <div style="width: 100%; margin-bottom: 25px; overflow-x: auto;">
-                    <h4 style="margin:0 0 10px 0; font-size: 14px; font-weight: 700;">Clinical Metric Matrix</h4>
-                    {table_html}
-                </div>
-
-                <!-- Row 2: Flowchart and Legends -->
-                <div style="display:flex; gap: 25px; align-items: flex-start;">
-                    
-                    <!-- Left: Flowchart -->
-                    <div style="flex: 1.2;">
-                        <div id="flowchartAnchor" style="position: relative; width: 100%; height: 220px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; overflow: visible;">
-                            <div id="zoomFlowchart" style="width:100%; height:100%; cursor: zoom-in; transition: all 0.3s ease;">
-                                <svg width="100%" height="100%" viewBox="0 0 400 200">
-                                    <defs>
-                                        <marker id="arrowhead-hybrid" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                                            <polygon points="0 0, 6 3, 0 6" fill="#94a3b8" />
-                                        </marker>
-                                    </defs>
-                                    <line x1="80" y1="90" x2="220" y2="40" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead-hybrid)" />
-                                    <line x1="80" y1="90" x2="220" y2="90" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead-hybrid)" />
-                                    <line x1="260" y1="55" x2="260" y2="75" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowhead-hybrid)" />
-                                    <path d="M 230 105 C 200 120, 200 135, 230 145" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead-hybrid)" />
-                                    <rect x="15" y="75" width="85" height="30" rx="15" fill="#3b82f6" />
-                                    <text x="57" y="94" fill="white" font-size="11" font-weight="600" text-anchor="middle">Age > 60</text>
-                                    <rect x="220" y="25" width="80" height="30" rx="15" fill="#3b82f6" />
-                                    <text x="260" y="44" fill="white" font-size="11" font-weight="600" text-anchor="middle">Diabetes</text>
-                                    <rect x="220" y="75" width="90" height="30" rx="15" fill="#3b82f6" />
-                                    <text x="265" y="94" fill="white" font-size="11" font-weight="600" text-anchor="middle">Hypertension</text>
-                                    <rect x="235" y="135" width="50" height="30" rx="15" fill="#3b82f6" />
-                                    <text x="260" y="154" fill="white" font-size="11" font-weight="600" text-anchor="middle">Statin</text>
-                                </svg>
-                            </div>
-                            
-                            <!-- Local Zoom Pop-over (unchanged logic) -->
-                            <div id="zoomModalOverlay" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; z-index: 1000; pointer-events: none;">
-                                <div id="zoomModalInner" style="width: 100%; background: #ffffff; border-radius: 20px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; pointer-events: auto; animation: zoomIn 0.2s ease-out;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">Pathway Detail</h3>
-                                        <div id="zoomModalClose" style="cursor: pointer; font-size: 20px; color: #64748b;">✕</div>
-                                    </div>
-                                    <div style="width: 100%; height: 320px; background: #f8fafc; border-radius: 12px; position: relative; border: 1px solid #e2e8f0; overflow: hidden;">
-                                         <svg width="100%" height="100%" viewBox="0 0 600 350">
-                                            <defs><marker id="arrow-gold" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="#94a3b8" /></marker></defs>
-                                            <path d="M 120 175 Q 225 100, 330 100" stroke="#cbd5e1" stroke-width="2" fill="none" marker-end="url(#arrow-gold)" /><path d="M 380 100 L 480 100" stroke="#cbd5e1" stroke-width="2" fill="none" marker-end="url(#arrow-gold)" />
-                                            <path d="M 120 175 Q 225 250, 330 250" stroke="#cbd5e1" stroke-width="2" fill="none" marker-end="url(#arrow-gold)" /><path d="M 380 250 L 480 250" stroke="#cbd5e1" stroke-width="2" fill="none" marker-end="url(#arrow-gold)" />
-                                            <rect x="20" y="150" width="100" height="50" rx="25" fill="#3b82f6" /><text x="70" y="180" fill="white" font-size="11" font-weight="700" text-anchor="middle">Age > 64 / M</text>
-                                            <rect x="330" y="75" width="100" height="50" rx="8" fill="#ef4444" /><text x="380" y="105" fill="white" font-size="11" font-weight="700" text-anchor="middle">Diabetes (T2)</text>
-                                            <rect x="480" y="75" width="100" height="50" rx="8" fill="#f59e0b" /><text x="530" y="105" fill="white" font-size="10" font-weight="700" text-anchor="middle">Kidney Risk</text>
-                                            <rect x="330" y="225" width="100" height="50" rx="8" fill="#ef4444" /><text x="380" y="255" fill="white" font-size="11" font-weight="700" text-anchor="middle">Hypertension</text>
-                                            <rect x="480" y="225" width="100" height="50" rx="8" fill="#22c55e" /><text x="530" y="255" fill="white" font-size="10" font-weight="700" text-anchor="middle">ACE Inhibitor</text>
-                                         </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Color Display Meanings (Stacked Legends) -->
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
-                        
-                        <!-- Pathway Legend -->
-                        <div style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-                            <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Pathway Node Roles:</div>
-                            <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 11px;">
-                                <div style="display:flex; align-items:center; gap:8px;"><div style="width:10px; height:10px; border-radius:2px; background:#3b82f6;"></div><span>Demographic Profile</span></div>
-                                <div style="display:flex; align-items:center; gap:8px;"><div style="width:10px; height:10px; border-radius:2px; background:#ef4444;"></div><span>Comorbidity Cluster</span></div>
-                                <div style="display:flex; align-items:center; gap:8px;"><div style="width:10px; height:10px; border-radius:2px; background:#f59e0b;"></div><span>Secondary Progression</span></div>
-                                <div style="display:flex; align-items:center; gap:8px;"><div style="width:10px; height:10px; border-radius:2px; background:#22c55e;"></div><span>Clinical Intervention</span></div>
-                            </div>
-                        </div>
-
-                        <!-- Metric Matrix Significance Key -->
-                        <div style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-                            <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Heatmap Metric Key:</div>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="width: 50px; height: 8px; background: linear-gradient(to right, #eff6ff, #1d4ed8); border-radius: 4px;"></div>
-                                    <span style="font-size: 11px; color: #475569;"><strong>Support:</strong> Pattern prevalence.</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="width: 50px; height: 8px; background: linear-gradient(to right, #fef2f2, #b91c1c); border-radius: 4px;"></div>
-                                    <span style="font-size: 11px; color: #475569;"><strong>Confidence:</strong> Strength of association.</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            """
-            st_html(unified_html)
-        else:
-            st_html('<div class="glass-card" style="padding:25px;">No matching rules found for the selected criteria.</div>')
-
-    components.html("""
-    <script>
-        const p = window.parent.document;
-        function init() {
-            function bind() {
-                const demoBtn = p.getElementById('demoBtn');
-                const demoModal = p.getElementById('demoModal');
-                const demoClose = p.getElementById('demoModalClose');
-                const advBtn = p.getElementById('advisoryBtn');
-                const advModal = p.getElementById('advisoryModal');
-                const advClose = p.getElementById('closeAdvisoryBtn');
-                const advTopClose = p.getElementById('closeAdvisoryTopBtn');
-                if(demoBtn) demoBtn.onclick = () => demoModal.style.display = 'flex';
-                if(demoClose) demoClose.onclick = () => demoModal.style.display = 'none';
-                if(advBtn) advBtn.onclick = () => advModal.style.display = 'flex';
-                if(advClose) advClose.onclick = () => advModal.style.display = 'none';
-                
-                // Private Consult Binds
-                const privateModal = p.getElementById('privateConsultModal');
-                const closePrivate = p.getElementById('closePrivateConsultBtn');
-                if(closePrivate) closePrivate.onclick = () => privateModal.style.display = 'none';
-                
-                const triggerPrivate = (role) => {
-                    p.getElementById('activeConsultantName').innerText = role;
-                    privateModal.style.display = 'flex';
-                    advModal.style.display = 'none'; // Close the main board
-                };
-                
-                // Bind to dynamic triggers in Specialist List
-                p.addEventListener('click', (e) => {
-                    if(e.target.classList.contains('privateConsultTrigger')) {
-                        const role = e.target.getAttribute('data-role');
-                        triggerPrivate(role);
-                    }
-                });
-                
-                // Navbar binds
-                const navApps = p.getElementById('navAppointments');
-                const appsModal = p.getElementById('appointmentsModal');
-                if(navApps) navApps.onclick = () => appsModal.style.display = 'flex';
-                if(p.getElementById('closeAppointments')) p.getElementById('closeAppointments').onclick = () => appsModal.style.display = 'none';
-                
-                const navSched = p.getElementById('navSchedule');
-                const schedModal = p.getElementById('scheduleModal');
-                if(navSched) navSched.onclick = () => schedModal.style.display = 'flex';
-                if(p.getElementById('closeSchedule')) p.getElementById('closeSchedule').onclick = () => schedModal.style.display = 'none';
-                
-                const navLabs = p.getElementById('navLabs');
-                const labsModal = p.getElementById('labsModal');
-                if(navLabs) navLabs.onclick = () => labsModal.style.display = 'flex';
-                if(p.getElementById('closeLabs')) p.getElementById('closeLabs').onclick = () => labsModal.style.display = 'none';
-                
-                const navProf = p.getElementById('navProfile');
-                const profModal = p.getElementById('profileModal');
-                if(navProf) navProf.onclick = () => profModal.style.display = 'flex';
-                if(p.getElementById('closeProfile')) p.getElementById('closeProfile').onclick = () => profModal.style.display = 'none';
-
-                const infoModal = p.getElementById('infoModal');
-                const infoClose = p.getElementById('infoModalClose');
-                if(infoClose) infoClose.onclick = () => infoModal.style.display = 'none';
-                const showInfo = (t, c) => {
-                    p.getElementById('infoModalTitle').innerText = t;
-                    p.getElementById('infoModalContent').innerHTML = c;
-                    infoModal.style.display = 'flex';
-                };
-                if(p.getElementById('infoVisits')) p.getElementById('infoVisits').onclick = () => showInfo('Visits', 'Total clinical visits.');
-                if(p.getElementById('infoEvents')) p.getElementById('infoEvents').onclick = () => showInfo('Events', 'Clinical events density.');
-                if(p.getElementById('infoAlgo')) p.getElementById('infoAlgo').onclick = () => showInfo('Algorithms', 'Apriori vs FP-Growth comparison.');
-                
-                const zoomBtn = p.getElementById('zoomFlowchart');
-                const zoomModal = p.getElementById('zoomModalOverlay');
-                const zoomClose = p.getElementById('zoomModalClose');
-                if(zoomBtn) zoomBtn.onclick = () => zoomModal.style.display = 'block';
-                if(zoomClose) zoomClose.onclick = (e) => { zoomModal.style.display = 'none'; e.stopPropagation(); };
-                
-                // Live Vitals Simulation
-                setInterval(() => {
-                    const hr = p.getElementById('liveHR');
-                    const temp = p.getElementById('liveTemp');
-                    const brain = p.getElementById('liveBrain');
-                    if(hr) hr.innerText = (80 + Math.floor(Math.random() * 10)) + " bpm";
-                    if(temp) temp.innerText = (38.2 + (Math.random() * 0.6)).toFixed(1) + "°C";
-                    if(brain) brain.innerText = (110 + Math.floor(Math.random() * 40)) + " Hz";
-                }, 2000);
-            }
-            bind();
+    Object.values(modals).forEach(({btn, modal, close}) => {
+        if(btn && modal) {
+            btn.onclick = () => modal.style.display = 'flex';
+            if(close) close.onclick = () => modal.style.display = 'none';
+            modal.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
         }
-        setTimeout(init, 100);
-    </script>
-    """, height=0, width=0)
+    });
+
+    // Info Modals
+    const infoModal = doc.getElementById('infoModal');
+    const infoTitle = doc.getElementById('infoModalTitle');
+    const infoContent = doc.getElementById('infoModalContent');
+    const infoClose = doc.getElementById('infoModalClose');
+
+    const infoData = {
+        'infoVisits': { title: 'Total Visits Analyzed', text: 'This represents the total volume of clinical transaction records mined from the HIPAA-compliant dataset to discover comorbidity trends.' },
+        'infoEvents': { title: 'Avg. Events / Visit', text: 'The mean number of concurrent diagnoses or clinical interventions recorded per patient encounter across the selected cohort.' }
+    };
+
+    Object.entries(infoData).forEach(([id, data]) => {
+        const icon = doc.getElementById(id);
+        if(icon) {
+            icon.onclick = () => {
+                infoTitle.innerText = data.title;
+                infoContent.innerText = data.text;
+                infoModal.style.display = 'flex';
+            };
+        }
+    });
+    if(infoClose) infoClose.onclick = () => infoModal.style.display = 'none';
+
+    // Private Consult Trigger
+    const privateModal = doc.getElementById('privateConsultModal');
+    const closePrivate = doc.getElementById('closePrivateConsultBtn');
+    
+    doc.querySelectorAll('.privateConsultTrigger').forEach(el => {
+        el.onclick = () => {
+            doc.getElementById('activeConsultantName').innerText = el.getAttribute('data-role');
+            privateModal.style.display = 'flex';
+        };
+    });
+    if(closePrivate) closePrivate.onclick = () => privateModal.style.display = 'none';
+
+</script>
+""")
