@@ -43,18 +43,18 @@ try:
     bg_img_b64 = get_base64_of_bin_file(img_path)
     bg_style = f"""
     @keyframes spin3D {{
-        from {{ transform: translate(-50%, -50%) rotateY(0deg); }}
-        to {{ transform: translate(-50%, -50%) rotateY(360deg); }}
+        from {{ transform: translate(-38%, -50%) rotateY(0deg); }}
+        to {{ transform: translate(-38%, -50%) rotateY(360deg); }}
     }}
     .bg-image {{
         position: fixed;
-        top: 50%;
-        left: 50%;
-        height: 90vh;
+        top: 55%;
+        left: 38%;
+        height: 85vh;
         z-index: 0;
-        opacity: 0.9;
+        opacity: 0.8;
         pointer-events: none;
-        animation: spin3D 20s linear infinite;
+        animation: spin3D 30s linear infinite;
         transform-style: preserve-3d;
     }}
     """
