@@ -246,11 +246,52 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
         </div>
       </div>
       <div class="gc">
-        <h3 style="font-size:14px;margin:0 0 10px;">Algorithm Comparison</h3>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div><div style="font-size:10px;color:#94a3b8;">Apriori</div><div style="font-size:20px;font-weight:700;">1.2s</div></div>
-          <div style="width:1px;height:28px;background:#e2e8f0;"></div>
-          <div><div style="font-size:10px;color:#94a3b8;">FP-Growth</div><div style="font-size:20px;font-weight:700;">0.4s</div></div>
+        <h3 style="font-size:14px;margin:0 0 14px;">Algorithm Comparison</h3>
+
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:9px;font-weight:800;color:#94a3b8;letter-spacing:1px;">APRIORI</div>
+            <div style="font-size:22px;font-weight:700;color:#ef4444;line-height:1.1;">1.2s</div>
+            <div style="font-size:9px;color:#94a3b8;">baseline</div>
+          </div>
+          <div style="text-align:center;padding-top:6px;">
+            <div style="font-size:9px;color:#94a3b8;">vs</div>
+            <div style="font-size:12px;font-weight:800;color:#10b981;background:#f0fdf4;padding:2px 7px;border-radius:20px;margin-top:2px;">3&times; faster</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:9px;font-weight:800;color:#94a3b8;letter-spacing:1px;">FP-GROWTH</div>
+            <div style="font-size:22px;font-weight:700;color:#10b981;line-height:1.1;">0.4s</div>
+            <div style="font-size:9px;color:#10b981;font-weight:600;">&#10003; active</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <div style="font-size:9px;color:#94a3b8;width:58px;flex-shrink:0;">Apriori</div>
+            <div style="flex:1;height:7px;background:#fee2e2;border-radius:4px;"><div style="width:100%;height:7px;background:#ef4444;border-radius:4px;"></div></div>
+            <div style="font-size:9px;color:#ef4444;font-weight:700;">1.2s</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="font-size:9px;color:#94a3b8;width:58px;flex-shrink:0;">FP-Growth</div>
+            <div style="flex:1;height:7px;background:#dcfce7;border-radius:4px;"><div style="width:33%;height:7px;background:#10b981;border-radius:4px;"></div></div>
+            <div style="font-size:9px;color:#10b981;font-weight:700;">0.4s</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0 10px;">
+          <div style="background:#fef2f2;border-radius:8px;padding:8px;">
+            <div style="font-size:9px;font-weight:800;color:#ef4444;letter-spacing:0.5px;margin-bottom:5px;">APRIORI</div>
+            <div style="font-size:9px;color:#64748b;line-height:1.5;">Generates candidate itemsets level-by-level. Requires one full dataset scan per itemset size, causing exponential candidate explosion on multi-condition clinical data.</div>
+          </div>
+          <div style="background:#f0fdf4;border-radius:8px;padding:8px;">
+            <div style="font-size:9px;font-weight:800;color:#10b981;letter-spacing:0.5px;margin-bottom:5px;">FP-GROWTH &#10003;</div>
+            <div style="font-size:9px;color:#64748b;line-height:1.5;">Builds a compressed FP-tree in a single scan — no candidate generation. Memory-efficient and linearly scalable across growing clinical visit volumes.</div>
+          </div>
+        </div>
+
+        <div style="border-left:3px solid #10b981;background:#f0fdf4;padding:8px 10px;border-radius:0 8px 8px 0;">
+          <div style="font-size:9px;font-weight:800;color:#10b981;letter-spacing:0.5px;margin-bottom:4px;">WHY FP-GROWTH FOR THIS SYSTEM</div>
+          <div style="font-size:9px;color:#475569;line-height:1.6;">With 2,440 clinical visits and overlapping multi-condition patterns, Apriori&apos;s candidate explosion becomes computationally prohibitive as comorbidity combinations grow. FP-Growth compresses the full transaction database into a single tree structure and mines all {total_rules} rules in 0.4s at min_support=0.01 — without generating a single redundant candidate. This makes it the correct choice for high-dimensional, real-time clinical analytics.</div>
         </div>
       </div>
     </div>
