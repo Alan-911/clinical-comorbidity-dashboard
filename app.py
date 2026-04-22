@@ -159,23 +159,23 @@ st_html(f"""
   </div>
 </div>
 <script>
-(function() {
-    function openModal(id) { var m = document.getElementById(id); if(m) m.style.display='flex'; }
-    function closeModal(id) { var m = document.getElementById(id); if(m) m.style.display='none'; }
-    function bindModal(btnId, modalId, closeId) {
+(function() {{
+    function openModal(id) {{ var m = document.getElementById(id); if(m) m.style.display='flex'; }}
+    function closeModal(id) {{ var m = document.getElementById(id); if(m) m.style.display='none'; }}
+    function bindModal(btnId, modalId, closeId) {{
         var btn = document.getElementById(btnId);
         var modal = document.getElementById(modalId);
         var cls = document.getElementById(closeId);
-        if(btn && modal) btn.addEventListener('click', function() { openModal(modalId); });
-        if(cls && modal) cls.addEventListener('click', function() { closeModal(modalId); });
-        if(modal) modal.addEventListener('click', function(e) { if(e.target===modal) closeModal(modalId); });
-    }
+        if(btn && modal) btn.addEventListener('click', function() {{ openModal(modalId); }});
+        if(cls && modal) cls.addEventListener('click', function() {{ closeModal(modalId); }});
+        if(modal) modal.addEventListener('click', function(e) {{ if(e.target===modal) closeModal(modalId); }});
+    }}
     bindModal('navAppt', 'apptModal', 'closeAppt');
     bindModal('navSched', 'schedModal', 'closeSched');
     bindModal('navLabs', 'labsModal', 'closeLabs');
     bindModal('demoCard', 'demoModal', 'closeDemo');
     bindModal('advisoryCard', 'advisoryModal', 'closeAdvisory');
-})();
+}})();
 </script>
 """)
 
