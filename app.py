@@ -65,6 +65,7 @@ def get_dashboard_data():
 data = get_dashboard_data()
 if not data: st.stop()
 rules_df, all_items = data
+total_visits, avg_events, time_apriori, time_fp = 2440, 3.2, 1.2, 0.4
 
 # --- Logic: Filter Rules ---
 filtered_rules = rules_df.copy()
