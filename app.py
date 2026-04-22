@@ -174,8 +174,8 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 .ekg{{height:24px;width:100%;margin-top:8px;background-size:100px 100%;animation:moveEKG 1s linear infinite;opacity:0.5;}}
 .ti{{margin-bottom:10px;padding-left:14px;border-left:2px solid #e2e8f0;position:relative;}}
 .ti::before{{content:'';position:absolute;left:-6px;top:2px;width:10px;height:10px;border-radius:50%;background:#3b82f6;}}
-.cd-ov{{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.55);backdrop-filter:blur(10px);z-index:9999;align-items:center;justify-content:center;}}
-.cd-mo{{background:#fff;border-radius:20px;padding:32px;max-width:90%;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.2);max-height:85vh;overflow-y:auto;}}
+.cd-ov{{display:none;position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;background:rgba(15,23,42,0.65);z-index:2147483647!important;align-items:center;justify-content:center;}}
+.cd-mo{{background:#fff;border-radius:20px;padding:32px;width:90%;max-width:720px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.25);max-height:85vh;overflow-y:auto;}}
 .cd-cl{{position:absolute;top:14px;right:16px;cursor:pointer;font-size:22px;color:#64748b;background:none;border:none;line-height:1;}}
 .ap{{border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;background:#f8fafc;}}
 [data-testid="stForm"]{{background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.8);border-radius:15px;padding:4px 18px 18px;box-shadow:0 10px 30px rgba(0,0,0,0.07);margin-top:15px;}}
@@ -185,6 +185,7 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 #navPatient{{cursor:pointer;transition:opacity 0.2s;}}
 #navPatient:hover{{opacity:0.7;}}
 .mid-stat{{background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.7);border-radius:14px;padding:14px 10px;text-align:center;margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.05);}}
+[data-testid="stAppViewContainer"],[data-testid="stMain"],section.main,.main,.block-container{{transform:none!important;filter:none!important;perspective:none!important;contain:none!important;will-change:auto!important;}}
 </style>
 {bg_html}
 
@@ -353,6 +354,7 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 <div id="advisoryModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:720px;"><button onclick="document.getElementById('advisoryModal').style.display='none'" class="cd-cl">&#10005;</button><h2 style="margin-top:0;">Specialist Advisory Board</h2><hr style="border:0;border-top:1px solid #e2e8f0;margin:14px 0;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;"><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Top Consequent Conditions</h4>{advisory_items_html}</div><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Evidence Summary</h4><div style="font-size:13px;margin-bottom:8px;">&#128200; Max Lift: <b>{max_lift_val}</b></div><div style="font-size:13px;margin-bottom:8px;">&#127919; Avg Confidence: <b>{avg_conf}%</b></div><div style="font-size:13px;margin-bottom:8px;">&#128196; Matching Rules: <b>{filtered_count}</b></div><div style="margin-top:12px;font-size:12px;color:#64748b;">Multi-specialty review recommended for high-lift chains above {round(max_lift_val*0.8,1)}.</div></div></div></div></div>
 <div id="demoModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:600px;"><button onclick="document.getElementById('demoModal').style.display='none'" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Demographic Comorbidity Insights</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:#0f172a;color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr><tr style="background:#f8fafc;"><td style="padding:8px;">Senior (65+)</td><td style="padding:8px;">Heart Disease</td><td style="padding:8px;">82%</td></tr><tr><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Diabetes</td><td style="padding:8px;">75%</td></tr><tr style="background:#f8fafc;"><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Hypertension</td><td style="padding:8px;">71%</td></tr></table></div></div>
 
+<img src=".x" onerror="(function mv(){{var ms=document.querySelectorAll('.cd-ov');if(!ms.length){{setTimeout(mv,200);return;}}ms.forEach(function(m){{if(m.parentNode!==document.body)document.body.appendChild(m);}});}})();" style="display:none" alt="">
 <script>
 (function vitals(){{
   var hr=document.getElementById('liveHR');
