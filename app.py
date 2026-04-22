@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import time
-from pyvis.network import Network
+import pandas as pd
 import streamlit.components.v1 as components
 import os
 import base64
@@ -31,6 +31,7 @@ def st_html(html_str):
     st.markdown(flat_html, unsafe_allow_html=True)
 
 # --- Helper to encode local image for background ---
+@st.cache_data
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
@@ -1091,6 +1092,6 @@ with col3:
             }
             bind();
         }
-        setTimeout(init, 1000);
+        setTimeout(init, 100);
     </script>
     """, height=0, width=0)
