@@ -12,7 +12,7 @@ import matplotlib.colors as mcolors
 import json
 import random
 
-# --- HIGH-FIDELITY RESTORATION ---
+# --- HIGH-FIDELITY RESTORATION (STABLE) ---
 st.set_page_config(
     page_title="Comorbidity Dashboard",
     page_icon="⚕️",
@@ -48,7 +48,7 @@ try:
 except Exception:
     bg_style, bg_html = "", ""
 
-# --- DATA ENGINE (RESTORED) ---
+# --- DATA ENGINE ---
 PROCESSED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_processed")
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
@@ -104,8 +104,7 @@ SPECIALIST_MAP = {
     'Routine Checkup': {'role': 'General Practitioner', 'qualifier': 'Coordination of primary care.'}
 }
 
-# --- ATOMIC UI COMPONENT GENERATION ---
-# Pre-calculate ALL strings before rendering anything
+# --- CALCULATIONS ---
 current_selection_rules = rules_df.copy() if rules_df is not None else None
 if st.session_state['primary_diag'] != "All":
     current_selection_rules = current_selection_rules[current_selection_rules['antecedents'].apply(lambda x: st.session_state['primary_diag'] in str(x))]
@@ -113,7 +112,7 @@ if st.session_state['secondary_diag'] != "All":
     current_selection_rules = current_selection_rules[current_selection_rules['consequents'].apply(lambda x: st.session_state['secondary_diag'] in str(x))]
 current_selection_rules = current_selection_rules.sort_values('lift', ascending=False) if current_selection_rules is not None else None
 
-# 1. Care Plan Timeline
+# Pre-build components
 schedule_html = ""
 if current_selection_rules is not None and len(current_selection_rules) > 0:
     for i, (_, row) in enumerate(current_selection_rules.nlargest(3, 'lift').iterrows()):
@@ -122,7 +121,6 @@ if current_selection_rules is not None and len(current_selection_rules) > 0:
 else:
     schedule_html = '<div class="glass-card" style="padding:15px;"><div class="timeline-item"><div class="timeline-time">09:00</div><div class="timeline-title">Routine Monitoring</div><div class="timeline-desc">Standard care protocol.</div></div></div>'
 
-# 2. Specialist Advisory
 spec_modal_content = ""
 consult_trigger_html = ""
 if current_selection_rules is not None and len(current_selection_rules) > 0:
@@ -132,12 +130,10 @@ if current_selection_rules is not None and len(current_selection_rules) > 0:
         for key, d in SPECIALIST_MAP.items():
             if key in c: specialists_data.append({'role': d['role'], 'condition': key, 'qualifier': d['qualifier']})
     if not specialists_data: specialists_data = [{'role': 'General Practitioner', 'condition': 'General Profile', 'qualifier': 'Coordination of care.'}]
-    
     spec_cards = "".join([f'<div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:15px; margin-bottom:12px; display:flex; align-items:center; gap:15px;"><div style="width:45px; height:45px; border-radius:50%; background:#eff6ff; display:flex; align-items:center; justify-content:center; color:#3b82f6; font-size:22px;">👨‍⚕️</div><div><div style="font-size:14px; font-weight:700;">{d["role"]}</div><div style="font-size:11px; color:#3b82f6;">{d["condition"]}</div><div style="font-size:10px; color:#64748b;">{d["qualifier"]}</div></div></div>' for d in specialists_data[:3]])
     consult_trigger_html = f'<div id="advisoryBtn" class="glass-card" style="margin-top:20px; border-left:4px solid #3b82f6; cursor:pointer;"><h3>Multi-Disciplinary Consult</h3><p style="font-size:12px; color:#64748b;">Click for recommendations board.</p><div style="font-size:11px; font-weight:700; color:#3b82f6;">View Insights &rarr;</div></div>'
-    spec_modal_content = f"""<div id="advisoryModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:9999; align-items:center; justify-content:center;"><div style="background:#fff; width:900px; max-width:90%; height:85vh; border-radius:24px; padding:40px; overflow-y:auto; box-shadow:0 40px 80px rgba(0,0,0,0.12);"><div id="closeAdvisoryBtn" style="position:absolute; top:30px; right:30px; cursor:pointer; font-size:24px;">✕</div><h2>Consultation Board</h2><div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:30px;"><div><h4>Specialists</h4>{spec_cards}</div><div><h4>Evidence</h4><p style="font-size:13px;">Strongest pattern: {clean_frozenset(current_selection_rules.iloc[0]["antecedents"])} &rarr; {con_c}</p></div></div></div></div>"""
+    spec_modal_content = f"""<div id="advisoryModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:9999; align-items:center; justify-content:center;"><div style="background:#fff; width:900px; max-width:90%; height:85vh; border-radius:24px; padding:40px; overflow-y:auto; box-shadow:0 40px 80px rgba(0,0,0,0.12);"><div id="closeAdvisoryBtn" style="position:absolute; top:30px; right:30px; cursor:pointer; font-size:24px;">✕</div><h2>Consultation Board</h2><div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:30px;"><div><h4>Specialists</h4>{spec_cards}</div><div><h4>Evidence</h4><p style="font-size:13px;">Pattern: {clean_frozenset(current_selection_rules.iloc[0]["antecedents"])} &rarr; {con_c}</p></div></div></div></div>"""
 
-# 3. Metric Matrix Table
 matrix_table_html = "<table style='width:100%; border-collapse:collapse; font-size:12px;'><tr><th>#</th><th>Pattern</th><th>Supp</th><th>Conf</th></tr>"
 cmap_sup, cmap_conf = plt.get_cmap('Blues'), plt.get_cmap('Reds')
 if current_selection_rules is not None and len(current_selection_rules) > 0:
@@ -148,7 +144,7 @@ if current_selection_rules is not None and len(current_selection_rules) > 0:
         matrix_table_html += f'<tr><td style="font-weight:700;">{i}</td><td>{clean_frozenset(row["antecedents"])} &rarr; {clean_frozenset(row["consequents"])}</td><td style="background:{bg_s}; color:{"#fff" if s_n > 0.5 else "#000"}; text-align:center;">{s_v:.2f}</td><td style="background:{bg_c}; color:{"#fff" if c_n > 0.5 else "#000"}; text-align:center;">{c_v:.2f}</td></tr>'
 matrix_table_html += "</table>"
 
-# --- THE ATOMIC MASTER HTML ---
+# --- RENDERER ---
 st_html(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -168,8 +164,8 @@ st_html(f"""
     @keyframes moveEKG {{ from {{ background-position: 0 0; }} to {{ background-position: -100px 0; }} }}
     .timeline-item {{ margin-bottom: 15px; padding-left: 15px; border-left: 2px solid #e2e8f0; position: relative; }}
     .timeline-item::before {{ content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; }}
-    @keyframes heartbeat {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.2); }} }}
     .heart-icon {{ animation: heartbeat 1.5s infinite; color: #ef4444; display: inline-block; }}
+    @keyframes heartbeat {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.2); }} }}
 </style>
 {bg_html}
 
@@ -186,10 +182,13 @@ st_html(f"""
         <span style="font-size:10px; font-weight:700; color:#475569;">Patient #2440</span>
     </div>
 </div>
+""")
 
-<div style="display: grid; grid-template-columns: 1fr 1.2fr 1.5fr; gap: 30px;">
-    <!-- COLUMN 1 -->
-    <div>
+# --- MAIN LAYOUT ---
+col1, col2, col3 = st.columns([1, 1.2, 1.5], gap="large")
+
+with col1:
+    st_html(f"""
         <h3>Dynamic Care Plan</h3>
         {schedule_html}
         <div class="glass-card" style="cursor:pointer; text-align:center; padding:15px; border:1px solid rgba(255,255,255,0.6);" id="demoBtn">
@@ -204,13 +203,12 @@ st_html(f"""
             </div>
             <div style="font-size:12px; opacity:0.8;">LIFT: {current_selection_rules.iloc[0]["lift"] if current_selection_rules is not None and len(current_selection_rules)>0 else 0:.2f}</div>
         </div>
-    </div>
+    """)
 
-    <!-- COLUMN 2 (EMPTY) -->
-    <div></div>
+with col2: st_html("<div style='height:80vh;'></div>")
 
-    <!-- COLUMN 3 -->
-    <div>
+with col3:
+    st_html(f"""
         <div class="vitals-row">
             <div class="vital-card">
                 <div style="font-size:12px; color:#64748b; font-weight:600;">Total Visits</div>
@@ -240,9 +238,9 @@ st_html(f"""
                     <svg width="100%" height="100%" viewBox="0 0 400 200">
                         <line x1="80" y1="100" x2="220" y2="50" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)" />
                         <line x1="80" y1="100" x2="220" y2="150" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)" />
-                        <rect x="20" y="85" width="100" height="30" rx="15" fill="#3b82f6" /><text x="70" y="104" fill="white" font-size="12" text-anchor="middle">Patient Profile</text>
-                        <rect x="220" y="35" width="100" height="30" rx="15" fill="#ef4444" /><text x="270" y="54" fill="white" font-size="12" text-anchor="middle">Comorbid Condition</text>
-                        <rect x="220" y="135" width="100" height="30" rx="15" fill="#f59e0b" /><text x="270" y="154" fill="white" font-size="12" text-anchor="middle">Treatment Pathway</text>
+                        <rect x="20" y="85" width="100" height="30" rx="15" fill="#3b82f6" /><text x="70" y="104" fill="white" font-size="12" text-anchor="middle">Profile</text>
+                        <rect x="220" y="35" width="100" height="30" rx="15" fill="#ef4444" /><text x="270" y="54" fill="white" font-size="12" text-anchor="middle">Condition</text>
+                        <rect x="220" y="135" width="100" height="30" rx="15" fill="#f59e0b" /><text x="270" y="154" fill="white" font-size="12" text-anchor="middle">Pathway</text>
                     </svg>
                 </div>
                 <div style="flex:1;">
@@ -254,12 +252,21 @@ st_html(f"""
                 </div>
             </div>
         </div>
-
-        <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:15px;">
-            <div class="glass-card" style="border-top:4px solid #0f172a; padding:15px;">
-                <h3>Pattern Selection</h3>
-                <div id="selectionFormAnchor"></div>
-            </div>
+    """)
+    
+    scol1, scol2 = st.columns([1, 1.5])
+    with scol1:
+        st.markdown('<div class="glass-card" style="border-top:4px solid #0f172a; padding:15px;"><h3>Pattern Selection</h3>', unsafe_allow_html=True)
+        with st.form("pattern_form"):
+            p = st.selectbox("Primary Diagnosis", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['primary_diag']))
+            s = st.selectbox("Secondary Condition", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['secondary_diag']))
+            if st.form_submit_button("Update Analytics Board", type="primary"):
+                st.session_state['primary_diag'], st.session_state['secondary_diag'] = p, s
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with scol2:
+        st_html(f"""
             <div class="glass-card" style="padding:15px;">
                 <h3>Algorithm Comparison</h3>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
@@ -268,40 +275,16 @@ st_html(f"""
                     <div><div style="font-size:11px; color:#94a3b8;">FP-Growth</div><div style="font-size:22px; font-weight:700;">{time_fp}s</div></div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-{spec_modal_content}
-""")
+        """)
 
-# --- STREAMLIT WIDGETS (Injected into Anchor) ---
-with st.container():
-    # We use a custom placeholder approach to move these widgets visually if needed, 
-    # but for now we'll render them in the designated right column slot.
-    # Note: Streamlit doesn't support easy "anchor" injection, so we use a small hack or just standard flow.
-    # To keep the "Atomic" feel, we'll place the form right where it's needed.
-    # The user wanted "re-arrange back the metric matrix table... like how they were looking"
-    pass
-
-# We must place the selectboxes where they were in the original layout (Col 3 Bottom)
-# But since we used st.columns above for the main layout, we'll just put them in col3.
-
-with col3:
-    st.markdown('<div style="height:480px;"></div>', unsafe_allow_html=True) # Spacer to push form to bottom
-    with st.form("pattern_form"):
-        p = st.selectbox("Primary Diagnosis", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['primary_diag']))
-        s = st.selectbox("Secondary Condition", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['secondary_diag']))
-        if st.form_submit_button("Update Analytics Board", type="primary"):
-            st.session_state['primary_diag'], st.session_state['secondary_diag'] = p, s
-            st.rerun()
-
-# --- ALL MODALS & JS ---
+# --- MODALS & JS ---
 st_html(f"""
+    {spec_modal_content}
     <div id="appointmentsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:500px;"><h3>Appointments</h3><p>Endocrinology - Oct 24</p><button id="closeApps">Close</button></div>
+        <div class="glass-card" style="width:500px;"><h3>Appointments</h3><p>Follow-up - Oct 24</p><button id="closeApps">Close</button></div>
     </div>
     <div id="scheduleModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
-        <div class="glass-card" style="width:500px;"><h3>Daily Schedule</h3><p>08:00 - Morning Vitals</p><button id="closeSched">Close</button></div>
+        <div class="glass-card" style="width:500px;"><h3>Schedule</h3><p>08:00 - Morning Vitals</p><button id="closeSched">Close</button></div>
     </div>
     <script>
         const doc = window.parent.document;
