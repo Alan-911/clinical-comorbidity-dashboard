@@ -62,7 +62,7 @@ plan_html = ""
 if len(f) > 0:
     for i, (_, row) in enumerate(f.nlargest(3,'lift').iterrows()):
         ant, con = clean_fs(row['antecedents']), clean_fs(row['consequents'])
-        plan_html += f'<div class="gc" style="padding:14px;margin-bottom:10px;"><div class="ti"><div style="font-size:10px;color:#94a3b8;font-weight:700;">{14+i}:00</div><div style="font-size:13px;font-weight:700;margin:3px 0;">Review {con[:14]}...</div><div style="font-size:11px;color:#64748b;">{ant[:18]} &rarr; {con[:18]}</div></div></div>'
+        plan_html += f'<div class="gc" style="padding:14px;margin-bottom:10px;"><div class="ti"><div style="font-size:10px;color:#94a3b8;font-weight:700;">{14+i}:00</div><div style="font-size:13px;font-weight:700;margin:3px 0;">Review {con[:22]}{"…" if len(con)>22 else ""}</div><div style="font-size:11px;color:#64748b;">{ant[:24]}{"…" if len(ant)>24 else ""} &rarr; {con[:24]}{"…" if len(con)>24 else ""}</div></div></div>'
 else:
     plan_html = '<div class="gc" style="padding:14px;"><div class="ti"><div style="font-size:13px;font-weight:700;">Standard Monitoring Plan</div></div></div>'
 
@@ -80,9 +80,38 @@ if len(f) > 0:
         cn = min(1.0, max(0.2, row['confidence']/1.0))
         bs, bc = mcolors.to_hex(cmap_s(sn)), mcolors.to_hex(cmap_c(cn))
         sc, cc = ("#fff" if sn>0.5 else "#000"), ("#fff" if cn>0.5 else "#000")
-        rows += f'<tr><td style="font-weight:700;padding:5px 6px;">{i}</td><td style="padding:5px 6px;font-size:11px;">{clean_fs(row["antecedents"])[:20]} &rarr; {clean_fs(row["consequents"])[:14]}</td><td style="background:{bs};color:{sc};text-align:center;padding:5px 6px;">{row["support"]:.2f}</td><td style="background:{bc};color:{cc};text-align:center;padding:5px 6px;">{row["confidence"]:.2f}</td></tr>'
+        rows += f'<tr><td style="font-weight:700;padding:5px 6px;">{i}</td><td style="padding:5px 6px;font-size:11px;">{clean_fs(row["antecedents"])[:24]} &rarr; {clean_fs(row["consequents"])[:20]}</td><td style="background:{bs};color:{sc};text-align:center;padding:5px 6px;">{row["support"]:.2f}</td><td style="background:{bc};color:{cc};text-align:center;padding:5px 6px;">{row["confidence"]:.2f}</td><td style="text-align:center;padding:5px 6px;font-weight:700;color:#7c3aed;">{row["lift"]:.1f}</td></tr>'
 
-matrix = f'<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="background:#f1f5f9;font-weight:700;"><th style="padding:5px 6px;">#</th><th style="padding:5px 6px;text-align:left;">Pattern</th><th style="padding:5px 6px;">Supp</th><th style="padding:5px 6px;">Conf</th></tr>{rows}</table>'
+matrix = f'<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="background:#f1f5f9;font-weight:700;"><th style="padding:5px 6px;">#</th><th style="padding:5px 6px;text-align:left;">Pattern</th><th style="padding:5px 6px;">Supp</th><th style="padding:5px 6px;">Conf</th><th style="padding:5px 6px;">Lift</th></tr>{rows}</table>'
+
+# --- Pre-compute stats for middle column and dynamic SVG ---
+total_rules = len(rules_df)
+filtered_count = len(f)
+avg_lift = round(f['lift'].mean(), 2) if len(f) > 0 else 0
+avg_conf = round(f['confidence'].mean() * 100, 1) if len(f) > 0 else 0
+max_lift_val = round(f['lift'].max(), 2) if len(f) > 0 else 0
+
+if len(f) > 0:
+    _ant = clean_fs(f.iloc[0]['antecedents'])
+    _con_parts = [c.strip() for c in clean_fs(f.iloc[0]['consequents']).split(',')]
+    svg_node0 = (_ant[:10] + '…') if len(_ant) > 10 else _ant
+    svg_node1 = (_con_parts[0][:11] + '…') if len(_con_parts[0]) > 11 else _con_parts[0]
+    svg_node2 = (_con_parts[1][:11] + '…') if len(_con_parts) > 1 and len(_con_parts[1]) > 11 else (_con_parts[1] if len(_con_parts) > 1 else 'Pathway')
+else:
+    svg_node0, svg_node1, svg_node2 = 'Profile', 'Condition', 'Pathway'
+
+# Dynamic top conditions for advisory modal
+_cond_set = []
+if len(f) > 0:
+    _seen = set()
+    for _, _row in f.nlargest(6, 'lift').iterrows():
+        for _item in clean_fs(_row['consequents']).split(','):
+            _item = _item.strip()
+            if _item and _item not in _seen:
+                _seen.add(_item)
+                _cond_set.append(_item)
+top_conds = _cond_set[:4]
+advisory_items_html = ''.join([f'<div style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:13px;">&#9679; {c}</div>' for c in top_conds]) or '<div style="font-size:13px;color:#94a3b8;">No conditions found</div>'
 
 # --- SINGLE ATOMIC HTML BLOCK: CSS + Nav + Modals + Full Layout ---
 st_html(f"""
@@ -105,6 +134,9 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 .ap{{border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;background:#f8fafc;}}
 [data-testid="stForm"]{{background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.8);border-radius:15px;padding:4px 18px 18px;box-shadow:0 10px 30px rgba(0,0,0,0.07);margin-top:15px;}}
 [data-testid="stForm"] label{{font-size:12px;font-weight:600;color:#64748b;}}
+#navAppt,#navSched,#navLabs{{transition:color 0.2s;}}
+#navAppt:hover,#navSched:hover,#navLabs:hover{{color:#3b82f6;cursor:pointer;}}
+.mid-stat{{background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.7);border-radius:14px;padding:14px 10px;text-align:center;margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.05);}}
 </style>
 {bg_html}
 
@@ -131,7 +163,12 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
     </div>
     {insight}
   </div>
-  <div></div>
+  <div style="padding-top:10px;">
+    <div class="mid-stat"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">TOTAL RULES</div><div style="font-size:30px;font-weight:700;color:#0f172a;">{total_rules}</div></div>
+    <div class="mid-stat"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">MATCHING</div><div style="font-size:30px;font-weight:700;color:#3b82f6;">{filtered_count}</div></div>
+    <div class="mid-stat"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">MAX LIFT</div><div style="font-size:30px;font-weight:700;color:#7c3aed;">{max_lift_val}</div></div>
+    <div class="mid-stat"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">AVG CONFIDENCE</div><div style="font-size:30px;font-weight:700;color:#10b981;">{avg_conf}%</div></div>
+  </div>
   <div>
     <div style="display:flex;gap:10px;margin-bottom:15px;">
       <div class="vc"><div style="font-size:11px;color:#94a3b8;font-weight:600;">Total Visits</div><div style="font-size:24px;font-weight:700;">2,440</div><div class="ekg" style="background:linear-gradient(90deg,transparent,#3b82f6,transparent);"></div></div>
@@ -139,7 +176,7 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
     </div>
     <div style="display:flex;gap:10px;margin-bottom:15px;">
       <div class="vc" style="font-size:13px;">Heart: <span id="liveHR">82</span>bpm &#10084;</div>
-      <div class="vc" style="font-size:13px;">Brain: <span id="liveBrain">120</span>Hz &#129504;</div>
+      <div class="vc" style="font-size:13px;">SpO2: <span id="liveBrain">98</span>% &#129695;</div>
       <div class="vc" style="font-size:13px;">Temp: <span id="liveTemp">38.5</span>&deg;C &#127777;</div>
     </div>
     <div class="gc">
@@ -156,9 +193,9 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
             <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
             <line x1="50" y1="75" x2="145" y2="38" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
             <line x1="50" y1="75" x2="145" y2="112" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
-            <rect x="10" y="60" width="80" height="30" rx="15" fill="#3b82f6"/><text x="50" y="79" fill="white" font-size="10" text-anchor="middle">Profile</text>
-            <rect x="150" y="23" width="90" height="30" rx="15" fill="#ef4444"/><text x="195" y="42" fill="white" font-size="10" text-anchor="middle">Condition</text>
-            <rect x="150" y="97" width="90" height="30" rx="15" fill="#f59e0b"/><text x="195" y="116" fill="white" font-size="10" text-anchor="middle">Pathway</text>
+            <rect x="10" y="60" width="80" height="30" rx="15" fill="#3b82f6"/><text x="50" y="79" fill="white" font-size="9" text-anchor="middle">{svg_node0}</text>
+            <rect x="150" y="23" width="90" height="30" rx="15" fill="#ef4444"/><text x="195" y="42" fill="white" font-size="9" text-anchor="middle">{svg_node1}</text>
+            <rect x="150" y="97" width="90" height="30" rx="15" fill="#f59e0b"/><text x="195" y="116" fill="white" font-size="9" text-anchor="middle">{svg_node2}</text>
           </svg>
         </div>
         <div style="flex:1;font-size:11px;padding-top:6px;">
@@ -193,7 +230,7 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 <div id="apptModal" class="cd-ov"><div class="cd-mo" style="width:520px;"><button id="closeAppt" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Upcoming Appointments</h3><div class="ap" style="border-left:3px solid #3b82f6;"><b>Oct 24</b> &mdash; Endocrinology Follow-up</div><div class="ap" style="border-left:3px solid #ef4444;"><b>Nov 3</b> &mdash; Cardiology Review</div><div class="ap" style="border-left:3px solid #f59e0b;"><b>Nov 18</b> &mdash; Routine Labs</div></div></div>
 <div id="schedModal" class="cd-ov"><div class="cd-mo" style="width:520px;"><button id="closeSched" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Daily Schedule</h3><div class="ap" style="border-left:3px solid #3b82f6;"><b>08:00</b> &mdash; Morning Vitals</div><div class="ap" style="border-left:3px solid #10b981;"><b>10:30</b> &mdash; Medication Review</div><div class="ap" style="border-left:3px solid #f59e0b;"><b>14:00</b> &mdash; Specialist Consultation</div></div></div>
 <div id="labsModal" class="cd-ov"><div class="cd-mo" style="width:600px;"><button id="closeLabs" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Lab Results</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:#0f172a;color:white;"><th style="padding:8px;">Test</th><th style="padding:8px;">Result</th><th style="padding:8px;">Status</th></tr><tr style="background:#f8fafc;"><td style="padding:8px;">HbA1c</td><td style="padding:8px;">7.2%</td><td style="padding:8px;color:#f59e0b;">&#9888; Monitor</td></tr><tr><td style="padding:8px;">LDL</td><td style="padding:8px;">112 mg/dL</td><td style="padding:8px;color:#ef4444;">&#10007; High</td></tr><tr style="background:#f8fafc;"><td style="padding:8px;">eGFR</td><td style="padding:8px;">78 mL/min</td><td style="padding:8px;color:#10b981;">&#10003; Normal</td></tr></table></div></div>
-<div id="advisoryModal" class="cd-ov"><div class="cd-mo" style="width:720px;"><button id="closeAdvisory" class="cd-cl">&#10005;</button><h2 style="margin-top:0;">Specialist Advisory Board</h2><hr style="border:0;border-top:1px solid #e2e8f0;margin:14px 0;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;"><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Recommended Specialists</h4><p>&#128104;&#8205;&#9877; Endocrinologist<br>&#129536; Cardiologist<br>&#129537; Pulmonologist</p></div><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Evidence Summary</h4><p>High Lift Chain detected. Confidence &gt;80%. Multi-specialty review recommended.</p></div></div></div></div>
+<div id="advisoryModal" class="cd-ov"><div class="cd-mo" style="width:720px;"><button id="closeAdvisory" class="cd-cl">&#10005;</button><h2 style="margin-top:0;">Specialist Advisory Board</h2><hr style="border:0;border-top:1px solid #e2e8f0;margin:14px 0;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;"><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Top Consequent Conditions</h4>{advisory_items_html}</div><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Evidence Summary</h4><div style="font-size:13px;margin-bottom:8px;">&#128200; Max Lift: <b>{max_lift_val}</b></div><div style="font-size:13px;margin-bottom:8px;">&#127919; Avg Confidence: <b>{avg_conf}%</b></div><div style="font-size:13px;margin-bottom:8px;">&#128196; Matching Rules: <b>{filtered_count}</b></div><div style="margin-top:12px;font-size:12px;color:#64748b;">Multi-specialty review recommended for high-lift chains above {round(max_lift_val*0.8,1)}.</div></div></div></div></div>
 <div id="demoModal" class="cd-ov"><div class="cd-mo" style="width:600px;"><button id="closeDemo" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Demographic Comorbidity Insights</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:#0f172a;color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr><tr style="background:#f8fafc;"><td style="padding:8px;">Senior (65+)</td><td style="padding:8px;">Heart Disease</td><td style="padding:8px;">82%</td></tr><tr><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Diabetes</td><td style="padding:8px;">75%</td></tr><tr style="background:#f8fafc;"><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Hypertension</td><td style="padding:8px;">71%</td></tr></table></div></div>
 
 <script>
@@ -214,7 +251,7 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
   setInterval(function(){{
     var hr=document.getElementById('liveHR'),br=document.getElementById('liveBrain'),tp=document.getElementById('liveTemp');
     if(hr)hr.innerText=78+Math.floor(Math.random()*12);
-    if(br)br.innerText=110+Math.floor(Math.random()*40);
+    if(br)br.innerText=96+Math.floor(Math.random()*4);
     if(tp)tp.innerText=(38.1+Math.random()*0.8).toFixed(1);
   }},2000);
   var scale=1,svg=document.getElementById('flowSvg');
