@@ -104,30 +104,30 @@ st_html(f"""
     <div style="font-weight:700; font-size:20px;">⚕️ Clinical Comorbidity &amp; Treatment Patterns</div>
     <div style="display:flex; gap:20px; font-size:13px; font-weight:600; color:#64748b;">
         <span style="cursor:pointer;">Dashboard</span>
-        <span onclick="document.getElementById('apptModal').style.display='flex'" style="cursor:pointer;">Appointments</span>
-        <span onclick="document.getElementById('schedModal').style.display='flex'" style="cursor:pointer;">Schedule</span>
-        <span onclick="document.getElementById('labsModal').style.display='flex'" style="cursor:pointer;">Labs</span>
+        <span id="navAppt" style="cursor:pointer;">Appointments</span>
+        <span id="navSched" style="cursor:pointer;">Schedule</span>
+        <span id="navLabs" style="cursor:pointer;">Labs</span>
     </div>
     <div style="text-align:right;"><div style="font-size:10px; font-weight:800;">PATIENT #2440</div><div style="font-size:9px; color:#3b82f6;">CONNECTED</div></div>
 </div>
-<div id="apptModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
-  <div class="cd-modal" style="width:520px;"><button class="cd-close" onclick="document.getElementById('apptModal').style.display='none'">✕</button>
+<div id="apptModal" class="cd-overlay">
+  <div class="cd-modal" style="width:520px;"><button id="closeAppt" class="cd-close">✕</button>
     <h3 style="margin-top:0;">Upcoming Appointments</h3>
     <div style="border-left:3px solid #3b82f6;padding:10px 15px;margin-bottom:10px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>Oct 24</b> — Endocrinology Follow-up</div>
     <div style="border-left:3px solid #ef4444;padding:10px 15px;margin-bottom:10px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>Nov 3</b> — Cardiology Review</div>
     <div style="border-left:3px solid #f59e0b;padding:10px 15px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>Nov 18</b> — Routine Labs</div>
   </div>
 </div>
-<div id="schedModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
-  <div class="cd-modal" style="width:520px;"><button class="cd-close" onclick="document.getElementById('schedModal').style.display='none'">✕</button>
+<div id="schedModal" class="cd-overlay">
+  <div class="cd-modal" style="width:520px;"><button id="closeSched" class="cd-close">✕</button>
     <h3 style="margin-top:0;">Daily Schedule</h3>
     <div style="border-left:3px solid #3b82f6;padding:10px 15px;margin-bottom:8px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>08:00</b> — Morning Vitals</div>
     <div style="border-left:3px solid #10b981;padding:10px 15px;margin-bottom:8px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>10:30</b> — Medication Review</div>
     <div style="border-left:3px solid #f59e0b;padding:10px 15px;background:#f8fafc;border-radius:0 8px 8px 0;"><b>14:00</b> — Specialist Consultation</div>
   </div>
 </div>
-<div id="labsModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
-  <div class="cd-modal" style="width:600px;"><button class="cd-close" onclick="document.getElementById('labsModal').style.display='none'">✕</button>
+<div id="labsModal" class="cd-overlay">
+  <div class="cd-modal" style="width:600px;"><button id="closeLabs" class="cd-close">✕</button>
     <h3 style="margin-top:0;">Lab Results</h3>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <tr style="background:#0f172a;color:white;"><th style="padding:8px;">Test</th><th style="padding:8px;">Result</th><th style="padding:8px;">Status</th></tr>
@@ -137,8 +137,8 @@ st_html(f"""
     </table>
   </div>
 </div>
-<div id="advisoryModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
-  <div class="cd-modal" style="width:750px;"><button class="cd-close" onclick="document.getElementById('advisoryModal').style.display='none'">✕</button>
+<div id="advisoryModal" class="cd-overlay">
+  <div class="cd-modal" style="width:750px;"><button id="closeAdvisory" class="cd-close">✕</button>
     <h2 style="margin-top:0;">Specialist Advisory Board</h2>
     <hr style="border:0;border-top:1px solid #e2e8f0;margin:15px 0;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
@@ -147,8 +147,8 @@ st_html(f"""
     </div>
   </div>
 </div>
-<div id="demoModal" class="cd-overlay" onclick="if(event.target===this)this.style.display='none'">
-  <div class="cd-modal" style="width:600px;"><button class="cd-close" onclick="document.getElementById('demoModal').style.display='none'">✕</button>
+<div id="demoModal" class="cd-overlay">
+  <div class="cd-modal" style="width:600px;"><button id="closeDemo" class="cd-close">✕</button>
     <h3 style="margin-top:0;">Demographic Comorbidity Insights</h3>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <tr style="background:#0f172a;color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr>
@@ -158,6 +158,25 @@ st_html(f"""
     </table>
   </div>
 </div>
+<script>
+(function() {
+    function openModal(id) { var m = document.getElementById(id); if(m) m.style.display='flex'; }
+    function closeModal(id) { var m = document.getElementById(id); if(m) m.style.display='none'; }
+    function bindModal(btnId, modalId, closeId) {
+        var btn = document.getElementById(btnId);
+        var modal = document.getElementById(modalId);
+        var cls = document.getElementById(closeId);
+        if(btn && modal) btn.addEventListener('click', function() { openModal(modalId); });
+        if(cls && modal) cls.addEventListener('click', function() { closeModal(modalId); });
+        if(modal) modal.addEventListener('click', function(e) { if(e.target===modal) closeModal(modalId); });
+    }
+    bindModal('navAppt', 'apptModal', 'closeAppt');
+    bindModal('navSched', 'schedModal', 'closeSched');
+    bindModal('navLabs', 'labsModal', 'closeLabs');
+    bindModal('demoCard', 'demoModal', 'closeDemo');
+    bindModal('advisoryCard', 'advisoryModal', 'closeAdvisory');
+})();
+</script>
 """)
 
 col1, col2, col3 = st.columns([1, 1.2, 1.5], gap="large")
@@ -176,14 +195,14 @@ with col1:
     
     # 2. Demographic Patterns
     st_html(f"""
-        <div onclick="document.getElementById('demoModal').style.display='flex'" class="glass-card" style="cursor:pointer; text-align:center; padding:15px; border:1px solid rgba(255,255,255,0.6);">
+        <div id="demoCard" class="glass-card" style="cursor:pointer; text-align:center; padding:15px; border:1px solid rgba(255,255,255,0.6);">
             <h3 style="margin:0;">Demographic Comorbidity Patterns</h3>
         </div>
     """)
     
     # 3. Consult Card
     st_html(f"""
-        <div onclick="document.getElementById('advisoryModal').style.display='flex'" class="glass-card" style="border-left:4px solid #3b82f6; cursor:pointer;">
+        <div id="advisoryCard" class="glass-card" style="border-left:4px solid #3b82f6; cursor:pointer;">
             <h3>Multi-Disciplinary Consult</h3>
             <p style="font-size:12px; color:#64748b;">AI-assisted specialist board recommendations.</p>
             <div style="font-size:11px; font-weight:700; color:#3b82f6;">View Insights &rarr;</div>
