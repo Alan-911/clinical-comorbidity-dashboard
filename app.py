@@ -24,8 +24,8 @@ try:
 except: pass
 
 def clean_fs(x):
-    c = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", str(x))
-    return re.sub(r'\s+', ' ', c.replace(",", ", ")).strip().strip(",")
+    c = re.sub(r"frozenset|[{}()\[\]'\"]", "", str(x))
+    return re.sub(r',\s*', ', ', re.sub(r'\s+', ' ', c)).strip().strip(",")
 
 @st.cache_data
 def get_data():
@@ -103,6 +103,8 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 .cd-mo{{background:#fff;border-radius:20px;padding:32px;max-width:90%;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.2);max-height:85vh;overflow-y:auto;}}
 .cd-cl{{position:absolute;top:14px;right:16px;cursor:pointer;font-size:22px;color:#64748b;background:none;border:none;line-height:1;}}
 .ap{{border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;background:#f8fafc;}}
+[data-testid="stForm"]{{background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.8);border-radius:15px;padding:4px 18px 18px;box-shadow:0 10px 30px rgba(0,0,0,0.07);margin-top:15px;}}
+[data-testid="stForm"] label{{font-size:12px;font-weight:600;color:#64748b;}}
 </style>
 {bg_html}
 
@@ -169,7 +171,11 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
     <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:13px;">
       <div class="gc" style="border-top:4px solid #0f172a;">
         <h3 style="font-size:14px;margin:0 0 10px;">Pattern Selection</h3>
-        <div id="formSlot"></div>
+        <div style="font-size:12px;color:#475569;">
+          <div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:2px;">PRIMARY</div><div style="font-weight:600;">{st.session_state['primary_diag']}</div></div>
+          <div><div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:2px;">SECONDARY</div><div style="font-weight:600;">{st.session_state['secondary_diag']}</div></div>
+          <div style="margin-top:10px;font-size:10px;color:#94a3b8;">&#8595; Update filters below</div>
+        </div>
       </div>
       <div class="gc">
         <h3 style="font-size:14px;margin:0 0 10px;">Algorithm Comparison</h3>
@@ -233,8 +239,7 @@ with st.form("pattern_form"):
         s = st.selectbox("Secondary Condition", ["All"] + all_items,
                          index=(["All"] + all_items).index(st.session_state['secondary_diag']))
     with c3:
-        st.write("")
-        submitted = st.form_submit_button("Update Analytics Board", type="primary")
+        submitted = st.form_submit_button("Apply Filters", type="primary", use_container_width=True)
     if submitted:
         st.session_state['primary_diag'], st.session_state['secondary_diag'] = p, s
         st.rerun()
