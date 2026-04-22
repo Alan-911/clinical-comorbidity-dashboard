@@ -191,20 +191,20 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 36px;background:rgba(255,255,255,0.75);backdrop-filter:blur(15px);border-radius:100px;box-shadow:0 4px 20px rgba(0,0,0,0.05);margin-bottom:18px;position:relative;z-index:10;">
   <div style="font-weight:700;font-size:19px;">&#9877; Clinical Comorbidity &amp; Treatment Patterns</div>
   <div style="display:flex;gap:20px;font-size:13px;font-weight:600;color:#64748b;">
-    <span id="navDash">Dashboard</span>
-    <span id="navAppt">Appointments</span>
-    <span id="navSched">Schedule</span>
-    <span id="navLabs">Labs</span>
+    <span onclick="document.getElementById('dashModal').style.display='flex'" style="cursor:pointer;transition:color 0.2s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#64748b'">Dashboard</span>
+    <span onclick="document.getElementById('apptModal').style.display='flex'" style="cursor:pointer;transition:color 0.2s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#64748b'">Appointments</span>
+    <span onclick="document.getElementById('schedModal').style.display='flex'" style="cursor:pointer;transition:color 0.2s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#64748b'">Schedule</span>
+    <span onclick="document.getElementById('labsModal').style.display='flex'" style="cursor:pointer;transition:color 0.2s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#64748b'">Labs</span>
   </div>
-  <div id="navPatient" style="text-align:right;"><div style="font-size:10px;font-weight:800;">PATIENT #2440</div><div style="font-size:9px;color:#3b82f6;">&#9679; CONNECTED</div></div>
+  <div onclick="document.getElementById('patientModal').style.display='flex'" style="text-align:right;cursor:pointer;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'"><div style="font-size:10px;font-weight:800;">PATIENT #2440</div><div style="font-size:9px;color:#3b82f6;">&#9679; CONNECTED</div></div>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1.3fr 1.6fr;gap:22px;position:relative;z-index:2;">
   <div>
     <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">Dynamic Care Plan</h3>
     {plan_html}
-    <div id="demoCard" class="gc" style="cursor:pointer;text-align:center;padding:14px;"><h3 style="margin:0;font-size:14px;">Demographic Comorbidity Patterns</h3></div>
-    <div id="advisoryCard" class="gc" style="border-left:4px solid #3b82f6;cursor:pointer;">
+    <div onclick="document.getElementById('demoModal').style.display='flex'" class="gc" style="cursor:pointer;text-align:center;padding:14px;" onmouseover="this.style.boxShadow='0 10px 30px rgba(59,130,246,0.15)'" onmouseout="this.style.boxShadow='0 10px 30px rgba(0,0,0,0.07)'"><h3 style="margin:0;font-size:14px;">Demographic Comorbidity Patterns</h3></div>
+    <div onclick="document.getElementById('advisoryModal').style.display='flex'" class="gc" style="border-left:4px solid #3b82f6;cursor:pointer;" onmouseover="this.style.boxShadow='0 10px 30px rgba(59,130,246,0.15)'" onmouseout="this.style.boxShadow='0 10px 30px rgba(0,0,0,0.07)'">
       <h3 style="font-size:14px;margin:0 0 6px;">Multi-Disciplinary Consult</h3>
       <p style="font-size:12px;color:#64748b;margin:0 0 8px;">AI-assisted specialist board recommendations.</p>
       <div style="font-size:11px;font-weight:700;color:#3b82f6;">View Insights &rarr;</div>
@@ -233,9 +233,9 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
       <div style="display:flex;gap:14px;">
         <div id="svgContainer" style="flex:1.2;height:185px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;position:relative;">
           <div style="position:absolute;top:5px;right:5px;display:flex;gap:3px;z-index:10;">
-            <button id="zoomIn" style="width:22px;height:22px;border-radius:50%;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:13px;line-height:1;">+</button>
-            <button id="zoomOut" style="width:22px;height:22px;border-radius:50%;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:13px;line-height:1;">&minus;</button>
-            <button id="zoomReset" style="width:22px;height:22px;border-radius:50%;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:10px;line-height:1;">&#8635;</button>
+            <button onclick="var g=document.getElementById('flowSvg'),s=parseFloat(g.getAttribute('data-s')||1);s=Math.min(s+0.2,3);g.setAttribute('data-s',s);g.style.transform='scale('+s+')'" style="width:22px;height:22px;border-radius:50%;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:13px;line-height:1;">+</button>
+            <button onclick="var g=document.getElementById('flowSvg'),s=parseFloat(g.getAttribute('data-s')||1);s=Math.max(s-0.2,0.4);g.setAttribute('data-s',s);g.style.transform='scale('+s+')'" style="width:22px;height:22px;border-radius:50%;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:13px;line-height:1;">&minus;</button>
+            <button onclick="var g=document.getElementById('flowSvg');g.setAttribute('data-s',1);g.style.transform='scale(1)'" style="width:22px;height:22px;border-radius:50%;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:10px;line-height:1;">&#8635;</button>
           </div>
           <svg id="flowSvg" width="100%" height="100%" viewBox="0 0 300 150" style="transform-origin:center;transition:transform 0.2s;">
             <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker></defs>
@@ -288,7 +288,7 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 </div>
 
 <!-- MODALS -->
-<div id="dashModal" class="cd-ov"><div class="cd-mo" style="width:680px;"><button id="closeDash" class="cd-cl">&#10005;</button>
+<div id="dashModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:680px;"><button onclick="document.getElementById('dashModal').style.display='none'" class="cd-cl">&#10005;</button>
   <h2 style="margin-top:0;font-size:18px;">&#9877; Dashboard Overview</h2>
   <hr style="border:0;border-top:1px solid #e2e8f0;margin:14px 0;">
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
@@ -324,7 +324,7 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
   </div>
 </div></div>
 
-<div id="patientModal" class="cd-ov"><div class="cd-mo" style="width:560px;"><button id="closePatient" class="cd-cl">&#10005;</button>
+<div id="patientModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:560px;"><button onclick="document.getElementById('patientModal').style.display='none'" class="cd-cl">&#10005;</button>
   <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">
     <div style="width:56px;height:56px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:white;font-weight:700;">P</div>
     <div>
@@ -347,43 +347,22 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
   </div>
 </div></div>
 
-<div id="apptModal" class="cd-ov"><div class="cd-mo" style="width:520px;"><button id="closeAppt" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Upcoming Appointments</h3><div class="ap" style="border-left:3px solid #3b82f6;"><b>Oct 24</b> &mdash; Endocrinology Follow-up</div><div class="ap" style="border-left:3px solid #ef4444;"><b>Nov 3</b> &mdash; Cardiology Review</div><div class="ap" style="border-left:3px solid #f59e0b;"><b>Nov 18</b> &mdash; Routine Labs</div></div></div>
-<div id="schedModal" class="cd-ov"><div class="cd-mo" style="width:520px;"><button id="closeSched" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Daily Schedule</h3><div class="ap" style="border-left:3px solid #3b82f6;"><b>08:00</b> &mdash; Morning Vitals</div><div class="ap" style="border-left:3px solid #10b981;"><b>10:30</b> &mdash; Medication Review</div><div class="ap" style="border-left:3px solid #f59e0b;"><b>14:00</b> &mdash; Specialist Consultation</div></div></div>
-<div id="labsModal" class="cd-ov"><div class="cd-mo" style="width:600px;"><button id="closeLabs" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Lab Results</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:#0f172a;color:white;"><th style="padding:8px;">Test</th><th style="padding:8px;">Result</th><th style="padding:8px;">Status</th></tr><tr style="background:#f8fafc;"><td style="padding:8px;">HbA1c</td><td style="padding:8px;">7.2%</td><td style="padding:8px;color:#f59e0b;">&#9888; Monitor</td></tr><tr><td style="padding:8px;">LDL</td><td style="padding:8px;">112 mg/dL</td><td style="padding:8px;color:#ef4444;">&#10007; High</td></tr><tr style="background:#f8fafc;"><td style="padding:8px;">eGFR</td><td style="padding:8px;">78 mL/min</td><td style="padding:8px;color:#10b981;">&#10003; Normal</td></tr></table></div></div>
-<div id="advisoryModal" class="cd-ov"><div class="cd-mo" style="width:720px;"><button id="closeAdvisory" class="cd-cl">&#10005;</button><h2 style="margin-top:0;">Specialist Advisory Board</h2><hr style="border:0;border-top:1px solid #e2e8f0;margin:14px 0;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;"><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Top Consequent Conditions</h4>{advisory_items_html}</div><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Evidence Summary</h4><div style="font-size:13px;margin-bottom:8px;">&#128200; Max Lift: <b>{max_lift_val}</b></div><div style="font-size:13px;margin-bottom:8px;">&#127919; Avg Confidence: <b>{avg_conf}%</b></div><div style="font-size:13px;margin-bottom:8px;">&#128196; Matching Rules: <b>{filtered_count}</b></div><div style="margin-top:12px;font-size:12px;color:#64748b;">Multi-specialty review recommended for high-lift chains above {round(max_lift_val*0.8,1)}.</div></div></div></div></div>
-<div id="demoModal" class="cd-ov"><div class="cd-mo" style="width:600px;"><button id="closeDemo" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Demographic Comorbidity Insights</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:#0f172a;color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr><tr style="background:#f8fafc;"><td style="padding:8px;">Senior (65+)</td><td style="padding:8px;">Heart Disease</td><td style="padding:8px;">82%</td></tr><tr><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Diabetes</td><td style="padding:8px;">75%</td></tr><tr style="background:#f8fafc;"><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Hypertension</td><td style="padding:8px;">71%</td></tr></table></div></div>
+<div id="apptModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:520px;"><button onclick="document.getElementById('apptModal').style.display='none'" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Upcoming Appointments</h3><div class="ap" style="border-left:3px solid #3b82f6;"><b>Oct 24</b> &mdash; Endocrinology Follow-up</div><div class="ap" style="border-left:3px solid #ef4444;"><b>Nov 3</b> &mdash; Cardiology Review</div><div class="ap" style="border-left:3px solid #f59e0b;"><b>Nov 18</b> &mdash; Routine Labs</div></div></div>
+<div id="schedModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:520px;"><button onclick="document.getElementById('schedModal').style.display='none'" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Daily Schedule</h3><div class="ap" style="border-left:3px solid #3b82f6;"><b>08:00</b> &mdash; Morning Vitals</div><div class="ap" style="border-left:3px solid #10b981;"><b>10:30</b> &mdash; Medication Review</div><div class="ap" style="border-left:3px solid #f59e0b;"><b>14:00</b> &mdash; Specialist Consultation</div></div></div>
+<div id="labsModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:600px;"><button onclick="document.getElementById('labsModal').style.display='none'" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Lab Results</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:#0f172a;color:white;"><th style="padding:8px;">Test</th><th style="padding:8px;">Result</th><th style="padding:8px;">Status</th></tr><tr style="background:#f8fafc;"><td style="padding:8px;">HbA1c</td><td style="padding:8px;">7.2%</td><td style="padding:8px;color:#f59e0b;">&#9888; Monitor</td></tr><tr><td style="padding:8px;">LDL</td><td style="padding:8px;">112 mg/dL</td><td style="padding:8px;color:#ef4444;">&#10007; High</td></tr><tr style="background:#f8fafc;"><td style="padding:8px;">eGFR</td><td style="padding:8px;">78 mL/min</td><td style="padding:8px;color:#10b981;">&#10003; Normal</td></tr></table></div></div>
+<div id="advisoryModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:720px;"><button onclick="document.getElementById('advisoryModal').style.display='none'" class="cd-cl">&#10005;</button><h2 style="margin-top:0;">Specialist Advisory Board</h2><hr style="border:0;border-top:1px solid #e2e8f0;margin:14px 0;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;"><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Top Consequent Conditions</h4>{advisory_items_html}</div><div style="background:#f8fafc;padding:18px;border-radius:12px;"><h4 style="margin-top:0;">Evidence Summary</h4><div style="font-size:13px;margin-bottom:8px;">&#128200; Max Lift: <b>{max_lift_val}</b></div><div style="font-size:13px;margin-bottom:8px;">&#127919; Avg Confidence: <b>{avg_conf}%</b></div><div style="font-size:13px;margin-bottom:8px;">&#128196; Matching Rules: <b>{filtered_count}</b></div><div style="margin-top:12px;font-size:12px;color:#64748b;">Multi-specialty review recommended for high-lift chains above {round(max_lift_val*0.8,1)}.</div></div></div></div></div>
+<div id="demoModal" class="cd-ov" onclick="if(event.target===this)this.style.display='none'"><div class="cd-mo" style="width:600px;"><button onclick="document.getElementById('demoModal').style.display='none'" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Demographic Comorbidity Insights</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:#0f172a;color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr><tr style="background:#f8fafc;"><td style="padding:8px;">Senior (65+)</td><td style="padding:8px;">Heart Disease</td><td style="padding:8px;">82%</td></tr><tr><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Diabetes</td><td style="padding:8px;">75%</td></tr><tr style="background:#f8fafc;"><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Hypertension</td><td style="padding:8px;">71%</td></tr></table></div></div>
 
 <script>
-(function(){{
-  function show(id){{var m=document.getElementById(id);if(m)m.style.display='flex';}}
-  function hide(id){{var m=document.getElementById(id);if(m)m.style.display='none';}}
-  function bind(b,m,c){{
-    var btn=document.getElementById(b),modal=document.getElementById(m),cls=document.getElementById(c);
-    if(btn&&modal)btn.addEventListener('click',function(){{show(m);}});
-    if(cls&&modal)cls.addEventListener('click',function(){{hide(m);}});
-    if(modal)modal.addEventListener('click',function(e){{if(e.target===modal)hide(m);}});
-  }}
-  bind('navDash','dashModal','closeDash');
-  bind('navAppt','apptModal','closeAppt');
-  bind('navSched','schedModal','closeSched');
-  bind('navLabs','labsModal','closeLabs');
-  bind('navPatient','patientModal','closePatient');
-  bind('demoCard','demoModal','closeDemo');
-  bind('advisoryCard','advisoryModal','closeAdvisory');
+(function vitals(){{
+  var hr=document.getElementById('liveHR');
+  if(!hr){{setTimeout(vitals,300);return;}}
   setInterval(function(){{
-    var hr=document.getElementById('liveHR'),br=document.getElementById('liveBrain'),tp=document.getElementById('liveTemp');
-    if(hr)hr.innerText=78+Math.floor(Math.random()*12);
-    if(br)br.innerText=96+Math.floor(Math.random()*4);
-    if(tp)tp.innerText=(38.1+Math.random()*0.8).toFixed(1);
+    var h=document.getElementById('liveHR'),b=document.getElementById('liveBrain'),t=document.getElementById('liveTemp');
+    if(h)h.innerText=78+Math.floor(Math.random()*12);
+    if(b)b.innerText=96+Math.floor(Math.random()*4);
+    if(t)t.innerText=(38.1+Math.random()*0.8).toFixed(1);
   }},2000);
-  var scale=1,svg=document.getElementById('flowSvg');
-  function applyZoom(){{if(svg)svg.style.transform='scale('+scale+')';}}
-  var zi=document.getElementById('zoomIn'),zo=document.getElementById('zoomOut'),zr=document.getElementById('zoomReset');
-  if(zi)zi.onclick=function(){{scale=Math.min(scale+0.2,3);applyZoom();}};
-  if(zo)zo.onclick=function(){{scale=Math.max(scale-0.2,0.4);applyZoom();}};
-  if(zr)zr.onclick=function(){{scale=1;applyZoom();}};
-  var cont=document.getElementById('svgContainer');
-  if(cont)cont.addEventListener('wheel',function(e){{e.preventDefault();scale=e.deltaY<0?Math.min(scale+0.1,3):Math.max(scale-0.1,0.4);applyZoom();}},{{passive:false}});
 }})();
 </script>
 """)
