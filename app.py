@@ -113,6 +113,52 @@ if len(f) > 0:
 top_conds = _cond_set[:4]
 advisory_items_html = ''.join([f'<div style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:13px;">&#9679; {c}</div>' for c in top_conds]) or '<div style="font-size:13px;color:#94a3b8;">No conditions found</div>'
 
+algo_comparison_html = f"""<div class="gc">
+  <h3 style="font-size:14px;margin:0 0 14px;">Algorithm Comparison</h3>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+    <div>
+      <div style="font-size:9px;font-weight:800;color:#94a3b8;letter-spacing:1px;">APRIORI</div>
+      <div style="font-size:22px;font-weight:700;color:#ef4444;line-height:1.1;">1.2s</div>
+      <div style="font-size:9px;color:#94a3b8;">baseline</div>
+    </div>
+    <div style="text-align:center;padding-top:6px;">
+      <div style="font-size:9px;color:#94a3b8;">vs</div>
+      <div style="font-size:12px;font-weight:800;color:#10b981;background:#f0fdf4;padding:2px 7px;border-radius:20px;margin-top:2px;">3&times; faster</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:9px;font-weight:800;color:#94a3b8;letter-spacing:1px;">FP-GROWTH</div>
+      <div style="font-size:22px;font-weight:700;color:#10b981;line-height:1.1;">0.4s</div>
+      <div style="font-size:9px;color:#10b981;font-weight:600;">&#10003; active</div>
+    </div>
+  </div>
+  <div style="margin-bottom:6px;">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <div style="font-size:9px;color:#94a3b8;width:58px;flex-shrink:0;">Apriori</div>
+      <div style="flex:1;height:7px;background:#fee2e2;border-radius:4px;"><div style="width:100%;height:7px;background:#ef4444;border-radius:4px;"></div></div>
+      <div style="font-size:9px;color:#ef4444;font-weight:700;">1.2s</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div style="font-size:9px;color:#94a3b8;width:58px;flex-shrink:0;">FP-Growth</div>
+      <div style="flex:1;height:7px;background:#dcfce7;border-radius:4px;"><div style="width:33%;height:7px;background:#10b981;border-radius:4px;"></div></div>
+      <div style="font-size:9px;color:#10b981;font-weight:700;">0.4s</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0 10px;">
+    <div style="background:#fef2f2;border-radius:8px;padding:8px;">
+      <div style="font-size:9px;font-weight:800;color:#ef4444;letter-spacing:0.5px;margin-bottom:5px;">APRIORI</div>
+      <div style="font-size:9px;color:#64748b;line-height:1.5;">Generates candidate itemsets level-by-level. Requires one full dataset scan per itemset size, causing exponential candidate explosion on multi-condition clinical data.</div>
+    </div>
+    <div style="background:#f0fdf4;border-radius:8px;padding:8px;">
+      <div style="font-size:9px;font-weight:800;color:#10b981;letter-spacing:0.5px;margin-bottom:5px;">FP-GROWTH &#10003;</div>
+      <div style="font-size:9px;color:#64748b;line-height:1.5;">Builds a compressed FP-tree in a single scan — no candidate generation. Memory-efficient and linearly scalable across growing clinical visit volumes.</div>
+    </div>
+  </div>
+  <div style="border-left:3px solid #10b981;background:#f0fdf4;padding:8px 10px;border-radius:0 8px 8px 0;">
+    <div style="font-size:9px;font-weight:800;color:#10b981;letter-spacing:0.5px;margin-bottom:4px;">WHY FP-GROWTH FOR THIS SYSTEM</div>
+    <div style="font-size:9px;color:#475569;line-height:1.6;">With 2,440 clinical visits and overlapping multi-condition patterns, Apriori's candidate explosion becomes computationally prohibitive as comorbidity combinations grow. FP-Growth compresses the full transaction database into a single tree structure and mines all {total_rules} rules in 0.4s at min_support=0.01 — without generating a single redundant candidate. This makes it the correct choice for high-dimensional, real-time clinical analytics.</div>
+  </div>
+</div>"""
+
 # --- SINGLE ATOMIC HTML BLOCK: CSS + Nav + Modals + Full Layout ---
 st_html(f"""
 <style>
@@ -236,65 +282,6 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
         </div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:13px;">
-      <div class="gc" style="border-top:4px solid #0f172a;">
-        <h3 style="font-size:14px;margin:0 0 10px;">Pattern Selection</h3>
-        <div style="font-size:12px;color:#475569;">
-          <div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:2px;">PRIMARY</div><div style="font-weight:600;">{st.session_state['primary_diag']}</div></div>
-          <div><div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:2px;">SECONDARY</div><div style="font-weight:600;">{st.session_state['secondary_diag']}</div></div>
-          <div style="margin-top:10px;font-size:10px;color:#94a3b8;">&#8595; Update filters below</div>
-        </div>
-      </div>
-      <div class="gc">
-        <h3 style="font-size:14px;margin:0 0 14px;">Algorithm Comparison</h3>
-
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-          <div>
-            <div style="font-size:9px;font-weight:800;color:#94a3b8;letter-spacing:1px;">APRIORI</div>
-            <div style="font-size:22px;font-weight:700;color:#ef4444;line-height:1.1;">1.2s</div>
-            <div style="font-size:9px;color:#94a3b8;">baseline</div>
-          </div>
-          <div style="text-align:center;padding-top:6px;">
-            <div style="font-size:9px;color:#94a3b8;">vs</div>
-            <div style="font-size:12px;font-weight:800;color:#10b981;background:#f0fdf4;padding:2px 7px;border-radius:20px;margin-top:2px;">3&times; faster</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:9px;font-weight:800;color:#94a3b8;letter-spacing:1px;">FP-GROWTH</div>
-            <div style="font-size:22px;font-weight:700;color:#10b981;line-height:1.1;">0.4s</div>
-            <div style="font-size:9px;color:#10b981;font-weight:600;">&#10003; active</div>
-          </div>
-        </div>
-
-        <div style="margin-bottom:6px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <div style="font-size:9px;color:#94a3b8;width:58px;flex-shrink:0;">Apriori</div>
-            <div style="flex:1;height:7px;background:#fee2e2;border-radius:4px;"><div style="width:100%;height:7px;background:#ef4444;border-radius:4px;"></div></div>
-            <div style="font-size:9px;color:#ef4444;font-weight:700;">1.2s</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div style="font-size:9px;color:#94a3b8;width:58px;flex-shrink:0;">FP-Growth</div>
-            <div style="flex:1;height:7px;background:#dcfce7;border-radius:4px;"><div style="width:33%;height:7px;background:#10b981;border-radius:4px;"></div></div>
-            <div style="font-size:9px;color:#10b981;font-weight:700;">0.4s</div>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0 10px;">
-          <div style="background:#fef2f2;border-radius:8px;padding:8px;">
-            <div style="font-size:9px;font-weight:800;color:#ef4444;letter-spacing:0.5px;margin-bottom:5px;">APRIORI</div>
-            <div style="font-size:9px;color:#64748b;line-height:1.5;">Generates candidate itemsets level-by-level. Requires one full dataset scan per itemset size, causing exponential candidate explosion on multi-condition clinical data.</div>
-          </div>
-          <div style="background:#f0fdf4;border-radius:8px;padding:8px;">
-            <div style="font-size:9px;font-weight:800;color:#10b981;letter-spacing:0.5px;margin-bottom:5px;">FP-GROWTH &#10003;</div>
-            <div style="font-size:9px;color:#64748b;line-height:1.5;">Builds a compressed FP-tree in a single scan — no candidate generation. Memory-efficient and linearly scalable across growing clinical visit volumes.</div>
-          </div>
-        </div>
-
-        <div style="border-left:3px solid #10b981;background:#f0fdf4;padding:8px 10px;border-radius:0 8px 8px 0;">
-          <div style="font-size:9px;font-weight:800;color:#10b981;letter-spacing:0.5px;margin-bottom:4px;">WHY FP-GROWTH FOR THIS SYSTEM</div>
-          <div style="font-size:9px;color:#475569;line-height:1.6;">With 2,440 clinical visits and overlapping multi-condition patterns, Apriori&apos;s candidate explosion becomes computationally prohibitive as comorbidity combinations grow. FP-Growth compresses the full transaction database into a single tree structure and mines all {total_rules} rules in 0.4s at min_support=0.01 — without generating a single redundant candidate. This makes it the correct choice for high-dimensional, real-time clinical analytics.</div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -338,17 +325,63 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 </script>
 """)
 
-# Pattern Selection form — Streamlit widget, placed after main render
-with st.form("pattern_form"):
-    c1, c2, c3 = st.columns([1, 1, 0.6])
-    with c1:
-        p = st.selectbox("Primary Diagnosis", ["All"] + all_items,
-                         index=(["All"] + all_items).index(st.session_state['primary_diag']))
-    with c2:
-        s = st.selectbox("Secondary Condition", ["All"] + all_items,
-                         index=(["All"] + all_items).index(st.session_state['secondary_diag']))
-    with c3:
-        submitted = st.form_submit_button("Apply Filters", type="primary", use_container_width=True)
-    if submitted:
-        st.session_state['primary_diag'], st.session_state['secondary_diag'] = p, s
-        st.rerun()
+# Bottom row — aligned with the right column of the main 3-col grid
+_l, _m, right_bottom = st.columns([1, 1.3, 1.6])
+with right_bottom:
+    ps_col, ac_col = st.columns([1, 1.4])
+    with ps_col:
+        with st.form("pattern_form"):
+            st.markdown(
+                '<h3 style="font-size:14px;font-weight:700;margin:0 0 12px;padding-top:10px;'
+                'border-top:4px solid #0f172a;">Pattern Selection</h3>',
+                unsafe_allow_html=True
+            )
+            p = st.selectbox("Primary Diagnosis", ["All"] + all_items,
+                             index=(["All"] + all_items).index(st.session_state['primary_diag']))
+            s = st.selectbox("Secondary Condition", ["All"] + all_items,
+                             index=(["All"] + all_items).index(st.session_state['secondary_diag']))
+            submitted = st.form_submit_button("Apply Filters", type="primary", use_container_width=True)
+            if submitted:
+                st.session_state['primary_diag'], st.session_state['secondary_diag'] = p, s
+                st.rerun()
+    with ac_col:
+        st_html(algo_comparison_html)
+
+# Partnership branding banner
+st_html("""
+<div style="margin-top:10px;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 55%,#0f172a 100%);
+     border-radius:16px;padding:22px 32px;display:flex;align-items:center;
+     justify-content:space-between;box-shadow:0 10px 40px rgba(0,0,0,0.18);">
+  <div style="display:flex;align-items:center;gap:18px;">
+    <div style="width:48px;height:48px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+         border-radius:14px;display:flex;align-items:center;justify-content:center;
+         font-size:24px;flex-shrink:0;box-shadow:0 4px 14px rgba(59,130,246,0.4);">&#9877;</div>
+    <div>
+      <div style="font-size:9px;color:#475569;font-weight:700;letter-spacing:2px;margin-bottom:3px;">IN PARTNERSHIP WITH</div>
+      <div style="font-size:17px;font-weight:700;color:white;letter-spacing:0.3px;">MedIntel Analytics Corp.</div>
+      <div style="font-size:10px;color:#64748b;margin-top:3px;">
+        Clinical Decision Support &nbsp;&bull;&nbsp; Comorbidity Intelligence &nbsp;&bull;&nbsp; Pattern Mining
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:28px;align-items:center;">
+    <div style="text-align:center;">
+      <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">CERTIFICATIONS</div>
+      <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:3px;">&#10003; HIPAA Compliant</div>
+      <div style="font-size:11px;font-weight:700;color:#3b82f6;">&#10003; ISO 13485:2016</div>
+    </div>
+    <div style="width:1px;height:36px;background:rgba(255,255,255,0.08);"></div>
+    <div style="text-align:center;">
+      <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">POWERED BY</div>
+      <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:3px;">FP-Growth AI Engine</div>
+      <div style="font-size:10px;color:#64748b;">mlxtend &bull; Python 3</div>
+    </div>
+    <div style="width:1px;height:36px;background:rgba(255,255,255,0.08);"></div>
+    <div style="text-align:center;">
+      <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">PLATFORM</div>
+      <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:3px;">Streamlit Cloud</div>
+      <div style="font-size:10px;color:#64748b;">Real-time &bull; Scalable</div>
+    </div>
+  </div>
+</div>
+""")
