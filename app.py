@@ -180,8 +180,10 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 .ap{{border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;background:#f8fafc;}}
 [data-testid="stForm"]{{background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.8);border-radius:15px;padding:4px 18px 18px;box-shadow:0 10px 30px rgba(0,0,0,0.07);margin-top:15px;}}
 [data-testid="stForm"] label{{font-size:12px;font-weight:600;color:#64748b;}}
-#navAppt,#navSched,#navLabs{{transition:color 0.2s;}}
-#navAppt:hover,#navSched:hover,#navLabs:hover{{color:#3b82f6;cursor:pointer;}}
+#navDash,#navAppt,#navSched,#navLabs{{transition:color 0.2s;cursor:pointer;}}
+#navDash:hover,#navAppt:hover,#navSched:hover,#navLabs:hover{{color:#3b82f6;}}
+#navPatient{{cursor:pointer;transition:opacity 0.2s;}}
+#navPatient:hover{{opacity:0.7;}}
 .mid-stat{{background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.7);border-radius:14px;padding:14px 10px;text-align:center;margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.05);}}
 </style>
 {bg_html}
@@ -189,12 +191,12 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 36px;background:rgba(255,255,255,0.75);backdrop-filter:blur(15px);border-radius:100px;box-shadow:0 4px 20px rgba(0,0,0,0.05);margin-bottom:18px;position:relative;z-index:10;">
   <div style="font-weight:700;font-size:19px;">&#9877; Clinical Comorbidity &amp; Treatment Patterns</div>
   <div style="display:flex;gap:20px;font-size:13px;font-weight:600;color:#64748b;">
-    <span>Dashboard</span>
-    <span id="navAppt" style="cursor:pointer;">Appointments</span>
-    <span id="navSched" style="cursor:pointer;">Schedule</span>
-    <span id="navLabs" style="cursor:pointer;">Labs</span>
+    <span id="navDash">Dashboard</span>
+    <span id="navAppt">Appointments</span>
+    <span id="navSched">Schedule</span>
+    <span id="navLabs">Labs</span>
   </div>
-  <div style="text-align:right;"><div style="font-size:10px;font-weight:800;">PATIENT #2440</div><div style="font-size:9px;color:#3b82f6;">CONNECTED</div></div>
+  <div id="navPatient" style="text-align:right;"><div style="font-size:10px;font-weight:800;">PATIENT #2440</div><div style="font-size:9px;color:#3b82f6;">&#9679; CONNECTED</div></div>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1.3fr 1.6fr;gap:22px;position:relative;z-index:2;">
@@ -286,6 +288,65 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
 </div>
 
 <!-- MODALS -->
+<div id="dashModal" class="cd-ov"><div class="cd-mo" style="width:680px;"><button id="closeDash" class="cd-cl">&#10005;</button>
+  <h2 style="margin-top:0;font-size:18px;">&#9877; Dashboard Overview</h2>
+  <hr style="border:0;border-top:1px solid #e2e8f0;margin:14px 0;">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
+    <div style="background:#f8fafc;border-radius:12px;padding:14px;text-align:center;border-top:3px solid #3b82f6;">
+      <div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">TOTAL RULES</div>
+      <div style="font-size:28px;font-weight:700;color:#0f172a;">{total_rules}</div>
+    </div>
+    <div style="background:#f8fafc;border-radius:12px;padding:14px;text-align:center;border-top:3px solid #7c3aed;">
+      <div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">MAX LIFT</div>
+      <div style="font-size:28px;font-weight:700;color:#7c3aed;">{max_lift_val}</div>
+    </div>
+    <div style="background:#f8fafc;border-radius:12px;padding:14px;text-align:center;border-top:3px solid #10b981;">
+      <div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">AVG CONFIDENCE</div>
+      <div style="font-size:28px;font-weight:700;color:#10b981;">{avg_conf}%</div>
+    </div>
+    <div style="background:#f8fafc;border-radius:12px;padding:14px;text-align:center;border-top:3px solid #f59e0b;">
+      <div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">MATCHING</div>
+      <div style="font-size:28px;font-weight:700;color:#f59e0b;">{filtered_count}</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div style="background:#f8fafc;border-radius:12px;padding:16px;">
+      <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">Active Filters</div>
+      <div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Primary Diagnosis:</span> <span style="font-weight:700;">{st.session_state['primary_diag']}</span></div>
+      <div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Secondary Condition:</span> <span style="font-weight:700;">{st.session_state['secondary_diag']}</span></div>
+    </div>
+    <div style="background:#f8fafc;border-radius:12px;padding:16px;">
+      <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">System Info</div>
+      <div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Algorithm:</span> FP-Growth (min_support=0.01)</div>
+      <div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Dataset:</span> 2,440 clinical visits</div>
+      <div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Partner:</span> MedIntel Analytics Corp.</div>
+    </div>
+  </div>
+</div></div>
+
+<div id="patientModal" class="cd-ov"><div class="cd-mo" style="width:560px;"><button id="closePatient" class="cd-cl">&#10005;</button>
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">
+    <div style="width:56px;height:56px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:white;font-weight:700;">P</div>
+    <div>
+      <h2 style="margin:0;font-size:18px;">Patient #2440</h2>
+      <div style="font-size:12px;color:#10b981;font-weight:600;margin-top:3px;">&#9679; Active Session &mdash; Connected</div>
+    </div>
+  </div>
+  <hr style="border:0;border-top:1px solid #e2e8f0;margin:0 0 16px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div class="ap" style="border-left:3px solid #3b82f6;"><div style="font-size:10px;color:#94a3b8;font-weight:700;">TOTAL VISITS</div><div style="font-size:18px;font-weight:700;">2,440</div></div>
+    <div class="ap" style="border-left:3px solid #f59e0b;"><div style="font-size:10px;color:#94a3b8;font-weight:700;">AVG EVENTS / VISIT</div><div style="font-size:18px;font-weight:700;">3.2</div></div>
+    <div class="ap" style="border-left:3px solid #10b981;"><div style="font-size:10px;color:#94a3b8;font-weight:700;">ACTIVE CONDITIONS</div><div style="font-size:18px;font-weight:700;">{filtered_count} patterns</div></div>
+    <div class="ap" style="border-left:3px solid #7c3aed;"><div style="font-size:10px;color:#94a3b8;font-weight:700;">RISK SCORE (LIFT)</div><div style="font-size:18px;font-weight:700;">{max_lift_val}</div></div>
+  </div>
+  <div style="background:#f8fafc;border-radius:12px;padding:14px;">
+    <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">Current Monitoring Focus</div>
+    <div style="font-size:12px;margin-bottom:5px;"><span style="color:#94a3b8;font-weight:600;">Primary:</span> {st.session_state['primary_diag']}</div>
+    <div style="font-size:12px;margin-bottom:5px;"><span style="color:#94a3b8;font-weight:600;">Secondary:</span> {st.session_state['secondary_diag']}</div>
+    <div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Next Review:</span> Nov 3 &mdash; Cardiology Review</div>
+  </div>
+</div></div>
+
 <div id="apptModal" class="cd-ov"><div class="cd-mo" style="width:520px;"><button id="closeAppt" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Upcoming Appointments</h3><div class="ap" style="border-left:3px solid #3b82f6;"><b>Oct 24</b> &mdash; Endocrinology Follow-up</div><div class="ap" style="border-left:3px solid #ef4444;"><b>Nov 3</b> &mdash; Cardiology Review</div><div class="ap" style="border-left:3px solid #f59e0b;"><b>Nov 18</b> &mdash; Routine Labs</div></div></div>
 <div id="schedModal" class="cd-ov"><div class="cd-mo" style="width:520px;"><button id="closeSched" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Daily Schedule</h3><div class="ap" style="border-left:3px solid #3b82f6;"><b>08:00</b> &mdash; Morning Vitals</div><div class="ap" style="border-left:3px solid #10b981;"><b>10:30</b> &mdash; Medication Review</div><div class="ap" style="border-left:3px solid #f59e0b;"><b>14:00</b> &mdash; Specialist Consultation</div></div></div>
 <div id="labsModal" class="cd-ov"><div class="cd-mo" style="width:600px;"><button id="closeLabs" class="cd-cl">&#10005;</button><h3 style="margin-top:0;">Lab Results</h3><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="background:#0f172a;color:white;"><th style="padding:8px;">Test</th><th style="padding:8px;">Result</th><th style="padding:8px;">Status</th></tr><tr style="background:#f8fafc;"><td style="padding:8px;">HbA1c</td><td style="padding:8px;">7.2%</td><td style="padding:8px;color:#f59e0b;">&#9888; Monitor</td></tr><tr><td style="padding:8px;">LDL</td><td style="padding:8px;">112 mg/dL</td><td style="padding:8px;color:#ef4444;">&#10007; High</td></tr><tr style="background:#f8fafc;"><td style="padding:8px;">eGFR</td><td style="padding:8px;">78 mL/min</td><td style="padding:8px;color:#10b981;">&#10003; Normal</td></tr></table></div></div>
@@ -302,9 +363,11 @@ html,body,[class*="css"]{{font-family:'Inter',sans-serif;color:#0f172a;}}
     if(cls&&modal)cls.addEventListener('click',function(){{hide(m);}});
     if(modal)modal.addEventListener('click',function(e){{if(e.target===modal)hide(m);}});
   }}
+  bind('navDash','dashModal','closeDash');
   bind('navAppt','apptModal','closeAppt');
   bind('navSched','schedModal','closeSched');
   bind('navLabs','labsModal','closeLabs');
+  bind('navPatient','patientModal','closePatient');
   bind('demoCard','demoModal','closeDemo');
   bind('advisoryCard','advisoryModal','closeAdvisory');
   setInterval(function(){{
@@ -349,38 +412,39 @@ with right_bottom:
 
 # Partnership branding banner
 st_html("""
-<div style="margin-top:10px;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 55%,#0f172a 100%);
-     border-radius:16px;padding:22px 32px;display:flex;align-items:center;
-     justify-content:space-between;box-shadow:0 10px 40px rgba(0,0,0,0.18);">
+<div style="margin-top:10px;background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);
+     border:1px solid rgba(255,255,255,0.8);border-radius:16px;padding:22px 32px;
+     display:flex;align-items:center;justify-content:space-between;
+     box-shadow:0 10px 30px rgba(0,0,0,0.07);">
   <div style="display:flex;align-items:center;gap:18px;">
     <div style="width:48px;height:48px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);
          border-radius:14px;display:flex;align-items:center;justify-content:center;
-         font-size:24px;flex-shrink:0;box-shadow:0 4px 14px rgba(59,130,246,0.4);">&#9877;</div>
+         font-size:24px;flex-shrink:0;box-shadow:0 4px 14px rgba(59,130,246,0.25);">&#9877;</div>
     <div>
-      <div style="font-size:9px;color:#475569;font-weight:700;letter-spacing:2px;margin-bottom:3px;">IN PARTNERSHIP WITH</div>
-      <div style="font-size:17px;font-weight:700;color:white;letter-spacing:0.3px;">MedIntel Analytics Corp.</div>
-      <div style="font-size:10px;color:#64748b;margin-top:3px;">
+      <div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:2px;margin-bottom:3px;">IN PARTNERSHIP WITH</div>
+      <div style="font-size:17px;font-weight:700;color:#0f172a;letter-spacing:0.3px;">MedIntel Analytics Corp.</div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:3px;">
         Clinical Decision Support &nbsp;&bull;&nbsp; Comorbidity Intelligence &nbsp;&bull;&nbsp; Pattern Mining
       </div>
     </div>
   </div>
   <div style="display:flex;gap:28px;align-items:center;">
     <div style="text-align:center;">
-      <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">CERTIFICATIONS</div>
+      <div style="font-size:8px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">CERTIFICATIONS</div>
       <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:3px;">&#10003; HIPAA Compliant</div>
       <div style="font-size:11px;font-weight:700;color:#3b82f6;">&#10003; ISO 13485:2016</div>
     </div>
-    <div style="width:1px;height:36px;background:rgba(255,255,255,0.08);"></div>
+    <div style="width:1px;height:36px;background:#e2e8f0;"></div>
     <div style="text-align:center;">
-      <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">POWERED BY</div>
+      <div style="font-size:8px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">POWERED BY</div>
       <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:3px;">FP-Growth AI Engine</div>
-      <div style="font-size:10px;color:#64748b;">mlxtend &bull; Python 3</div>
+      <div style="font-size:10px;color:#94a3b8;">mlxtend &bull; Python 3</div>
     </div>
-    <div style="width:1px;height:36px;background:rgba(255,255,255,0.08);"></div>
+    <div style="width:1px;height:36px;background:#e2e8f0;"></div>
     <div style="text-align:center;">
-      <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">PLATFORM</div>
+      <div style="font-size:8px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">PLATFORM</div>
       <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:3px;">Streamlit Cloud</div>
-      <div style="font-size:10px;color:#64748b;">Real-time &bull; Scalable</div>
+      <div style="font-size:10px;color:#94a3b8;">Real-time &bull; Scalable</div>
     </div>
   </div>
 </div>
