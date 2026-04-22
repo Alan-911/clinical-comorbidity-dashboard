@@ -120,12 +120,19 @@ with col1:
     
     st_html(f"<h3>Dynamic Care Plan</h3>{schedule_items}")
     
-    # 2. Consult Card
+    # 2. Demographic Patterns
     st_html(f"""
-        <div class="glass-card" style="border-left:4px solid #3b82f6;">
+        <div id="demoBtn" class="glass-card" style="cursor:pointer; text-align:center; padding:15px; border:1px solid rgba(255,255,255,0.6);">
+            <h3 style="margin:0;">Demographic Comorbidity Patterns</h3>
+        </div>
+    """)
+    
+    # 3. Consult Card
+    st_html(f"""
+        <div class="glass-card" style="border-left:4px solid #3b82f6;" id="advisoryBtn">
             <h3>Multi-Disciplinary Consult</h3>
             <p style="font-size:12px; color:#64748b;">AI-assisted specialist board recommendations.</p>
-            <div style="font-size:11px; font-weight:700; color:#3b82f6; cursor:pointer;" id="viewInsights">View Insights &rarr;</div>
+            <div style="font-size:11px; font-weight:700; color:#3b82f6; cursor:pointer;">View Insights &rarr;</div>
         </div>
     """)
     
@@ -223,10 +230,49 @@ if st.session_state['show_advisory']:
                 <div style="background:#f8fafc; padding:15px; border-radius:12px;"><h4>Recommended Specialists</h4><p>Endocrinologist, Cardiologist</p></div>
                 <div style="background:#f8fafc; padding:15px; border-radius:12px;"><h4>Evidence Metrics</h4><p>High Lift Chain detected in current cluster.</p></div>
             </div>
-            <div style="text-align:right; margin-top:30px;"><button id="closeModal" style="padding:8px 20px; border-radius:8px; background:#0f172a; color:white; border:none; cursor:pointer;">Close Board</button></div>
+            <div style="text-align:right; margin-top:30px;"><button id="closeAdvisoryBtn" style="padding:8px 20px; border-radius:8px; background:#0f172a; color:white; border:none; cursor:pointer;">Close Board</button></div>
         </div>
     </div>
-    """)
+""")
+
+# --- MODALS & JS ---
+st_html(f"""
+    <div id="demoModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:600px;">
+            <h3>Demographic Insights</h3>
+            <p>Live analysis of comorbid clusters across patient demographics.</p>
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <tr style="background:#0f172a; color:white;"><th>Profile</th><th>Condition</th><th>Conf</th></tr>
+                <tr><td>Age: Senior</td><td>Heart Disease</td><td>0.82</td></tr>
+                <tr><td>Age: Adult</td><td>Diabetes</td><td>0.75</td></tr>
+            </table>
+            <button id="closeDemo" style="margin-top:20px; padding:10px; border-radius:8px; border:none; background:#0f172a; color:white; cursor:pointer;">Close</button>
+        </div>
+    </div>
+    <div id="appointmentsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:500px;"><h3>Appointments</h3><p>Follow-up - Oct 24</p><button id="closeApps">Close</button></div>
+    </div>
+    <div id="scheduleModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:500px;"><h3>Schedule</h3><p>08:00 - Morning Vitals</p><button id="closeSched">Close</button></div>
+    </div>
+    <script>
+        const doc = window.parent.document;
+        const bind = (id, mid, cid) => {{
+            const b = doc.getElementById(id); const m = doc.getElementById(mid); const c = doc.getElementById(cid);
+            if(b && m) {{ b.onclick = () => m.style.display = 'flex'; if(c) c.onclick = () => m.style.display = 'none'; }}
+        }};
+        bind('advisoryBtn', 'advisoryModal', 'closeAdvisoryBtn');
+        bind('demoBtn', 'demoModal', 'closeDemo');
+        bind('navAppointments', 'appointmentsModal', 'closeApps');
+        bind('navSchedule', 'scheduleModal', 'closeSched');
+        setInterval(() => {{
+            const h = doc.getElementById('liveHR'); const b = doc.getElementById('liveBrain'); const t = doc.getElementById('liveTemp');
+            if(h) h.innerText = 80 + Math.floor(Math.random() * 10);
+            if(b) b.innerText = 110 + Math.floor(Math.random() * 40);
+            if(t) t.innerText = (38.2 + Math.random() * 0.6).toFixed(1);
+        }}, 2000);
+    </script>
+""")
 
 # --- JS For Triggers ---
 st_html("""
