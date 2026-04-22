@@ -289,13 +289,22 @@ with col1:
     # --- 🩺 MULTI-DISCIPLINARY CONSULT (RE-DESIGNED AS MODAL TRIGGER) ---
     consult_trigger_html = ""
     adv_modal_content = ""
+    specialists_data = []
+    num_specialties = 0
+    high_strength = 0
+    conf_min, conf_max = 0, 0
+    lift_min, lift_max = 0, 0
+    table1_rows = ""
+    spec_list_html = ""
+    con_c = "General"
+    spec_str = "General Practitioner"
+
     if current_selection_rules is not None and len(current_selection_rules) > 0:
         top_c_rule = current_selection_rules.iloc[0]
         ant_c = clean_frozenset(top_c_rule['antecedents'])
         con_c = clean_frozenset(top_c_rule['consequents'])
         cons_list = con_c.split(", ")
         # --- DYNAMIC SPECIALIST SELECTION ---
-        specialists_data = [] # List of dicts: {'role', 'condition', 'qualifier'}
         seen_roles = set()
         for c in cons_list:
             for key, data in SPECIALIST_MAP.items():
