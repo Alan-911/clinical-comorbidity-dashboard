@@ -59,10 +59,9 @@ try:
     """
     bg_html = f'<img src="data:image/png;base64,{bg_img_b64}" class="bg-image">'
 except Exception:
-    bg_style = ""
-    bg_html = ""
+    bg_style, bg_html = "", ""
 
-# --- Consolidated UI Core (Optimized for performance) ---
+# --- Consolidated CSS & Nav ---
 st_html(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -112,7 +111,7 @@ st_html(f"""
     button[data-testid="baseButton-primary"] {{ background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; color: white !important; width: 100% !important; border-radius: 12px !important; padding: 12px !important; font-weight: 700 !important; border: none !important; margin-top: 15px !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; text-transform: uppercase; letter-spacing: 0.5px; font-size: 12px !important; }}
     @keyframes zoomIn {{ from {{ transform: translate(-50%, -50%) scale(0.9); opacity: 0; }} to {{ transform: translate(-50%, -50%) scale(1); opacity: 1; }} }}
     </style>
-    {bg_html if bg_html else ""}
+    {bg_html}
     <div class="navbar">
         <div class="navbar-brand">
             <span style="font-size: 24px;">⚕️</span> <span style="color:#0f172a; font-weight:700; font-size:20px; margin-left:5px;">Comorbidity & Treatment Patterns</span>
@@ -130,7 +129,7 @@ st_html(f"""
     </div>
 """)
 
-# --- Data Mining Logic ---
+# --- Data Mining Engine ---
 PROCESSED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_processed")
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
@@ -142,7 +141,7 @@ def get_processed_data():
         return pd.read_csv(rules_path), pd.read_csv(itemsets_path)
     df_encoded = load_and_encode_data()
     if df_encoded is not None:
-        freq_items, _ = fpgrowth(df_encoded, min_support=0.01, use_colnames=True), 0
+        freq_items = fpgrowth(df_encoded, min_support=0.01, use_colnames=True)
         rules = association_rules(freq_items, metric="confidence", min_threshold=0.5)
         rules.to_csv(rules_path, index=False)
         freq_items.to_csv(itemsets_path, index=False)
@@ -160,34 +159,15 @@ def load_and_encode_data():
         return pd.DataFrame(te_ary, columns=te.columns_)
     except Exception: return None
 
-def get_rules_for_diagnosis(rules, primary="All", secondary="All"):
-    if rules is None: return None
-    filtered = rules.copy()
-    if primary != "All": filtered = filtered[filtered['antecedents'].apply(lambda x: primary in str(x))]
-    if secondary != "All": filtered = filtered[filtered['consequents'].apply(lambda x: secondary in str(x))]
-    return filtered.sort_values('lift', ascending=False)
-
-# --- Specialist Mapping ---
-SPECIALIST_MAP = {
-    'Hypertension': {'role': 'Cardiologist', 'qualifier': 'Expert in vascular tension and hypertensive management.'},
-    'Diabetes': {'role': 'Endocrinologist', 'qualifier': 'Expert in metabolic regulation and glycemic control.'},
-    'Asthma': {'role': 'Pulmonologist', 'qualifier': 'Specializes in chronic airway management and lung function.'},
-    'Kidney Disease': {'role': 'Nephrologist', 'qualifier': 'Expert in renal filtration and electrolyte balance.'},
-    'Allergy': {'role': 'Allergist / Immunologist', 'qualifier': 'Specializes in hypersensitivity and immune response.'},
-    'Routine Checkup': {'role': 'General Practitioner', 'qualifier': 'Coordination of comprehensive primary care.'}
-}
+def clean_frozenset(x):
+    if not isinstance(x, str): x = str(x)
+    cleaned = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", x)
+    cleaned = cleaned.replace(",", ", ")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned.strip(",") if cleaned else "General"
 
 rules_raw, itemsets_raw = get_processed_data()
-
 if rules_raw is not None:
-    def clean_frozenset(x):
-        if not isinstance(x, str): x = str(x)
-        cleaned = re.sub(r"(frozenset|set|[{}()\[\]'\"])", "", x)
-        cleaned = cleaned.replace(",", ", ")
-        cleaned = re.sub(r"\s+", " ", cleaned).strip()
-        cleaned = cleaned.strip(",")
-        return cleaned if cleaned else "General"
-    
     rules_df = rules_raw.copy()
     all_items = set()
     for col in ['antecedents', 'consequents']:
@@ -195,8 +175,7 @@ if rules_raw is not None:
             items = clean_frozenset(val).split(",")
             all_items.update([i.strip() for i in items if i.strip()])
     all_items = sorted(list(all_items))
-    total_visits, avg_events = 2440, 3.2
-    time_apriori, time_fp = 1.2, 0.4
+    total_visits, avg_events, time_apriori, time_fp = 2440, 3.2, 1.2, 0.4
 else:
     rules_df, all_items = None, []
     total_visits, avg_events, time_apriori, time_fp = 0, 0, 0, 0
@@ -205,98 +184,163 @@ else:
 col1, col2, col3 = st.columns([1, 1.2, 1.5], gap="large")
 
 with col1:
-    # --- Dynamic Care Plan (Restored) ---
-    current_selection_rules = get_rules_for_diagnosis(rules_df, st.session_state['primary_diag'], st.session_state['secondary_diag'])
+    # --- Dynamic Care Plan ---
+    current_selection_rules = rules_df.copy() if rules_df is not None else None
+    if st.session_state['primary_diag'] != "All":
+        current_selection_rules = current_selection_rules[current_selection_rules['antecedents'].apply(lambda x: st.session_state['primary_diag'] in str(x))]
+    if st.session_state['secondary_diag'] != "All":
+        current_selection_rules = current_selection_rules[current_selection_rules['consequents'].apply(lambda x: st.session_state['secondary_diag'] in str(x))]
+    
     schedule_items = []
     if current_selection_rules is not None and len(current_selection_rules) > 0:
-        top_care_rules = current_selection_rules.nlargest(3, 'lift')
-        for i, (idx, row) in enumerate(top_care_rules.iterrows()):
+        for i, (idx, row) in enumerate(current_selection_rules.nlargest(3, 'lift').iterrows()):
             ant, con = clean_frozenset(row['antecedents']), clean_frozenset(row['consequents'])
-            schedule_items.append({'time': f'{14+i}:00', 'title': f'Protocol: {con[:12]}...', 'desc': f'Reason: {ant} &rarr; {con}'})
+            schedule_items.append({'time': f'{14+i}:00', 'title': f'Risk: {con[:12]}...', 'desc': f'Link: {ant} &rarr; {con}'})
     
     if not schedule_items: schedule_items = [{'time': '09:00', 'title': 'Routine Baseline', 'desc': 'Standard monitoring.'}]
     
     timeline_html = "".join([f'<div class="glass-card" style="padding:15px; margin-bottom:10px;"><div class="timeline-item"><div class="timeline-time">{item["time"]}</div><div class="timeline-title">{item["title"]}</div><div class="timeline-desc">{item["desc"]}</div></div></div>' for item in schedule_items])
-    
     st_html(f'<div><h3>Dynamic Care Plan</h3>{timeline_html}</div>')
     
-    # --- Specialist Consult Trigger (Restored) ---
-    consult_trigger_html = ""
-    adv_modal_content = ""
-    specialists_data, num_specialties, high_strength, conf_min, conf_max, lift_min, lift_max, table1_rows, spec_list_html, con_c, spec_str = [], 0, 0, 0, 0, 0, 0, "", "", "General", "General Practitioner"
-
-    if current_selection_rules is not None and len(current_selection_rules) > 0:
-        top_c_rule = current_selection_rules.iloc[0]
-        ant_c, con_c = clean_frozenset(top_c_rule['antecedents']), clean_frozenset(top_c_rule['consequents'])
-        for c in con_c.split(", "):
-            for key, data in SPECIALIST_MAP.items():
-                if key in c: specialists_data.append({'role': data['role'], 'condition': key, 'qualifier': data['qualifier']})
-        
-        if not specialists_data: specialists_data = [{'role': 'General Practitioner', 'condition': 'General Profile', 'qualifier': 'Coordination of care.'}]
-        spec_str = ", ".join([d['role'] for d in specialists_data])
-        num_specialties = len(specialists_data)
-        high_strength = len(current_selection_rules[current_selection_rules['lift'] > 1.5])
-        conf_min, conf_max = current_selection_rules['confidence'].min(), current_selection_rules['confidence'].max()
-        lift_min, lift_max = current_selection_rules['lift'].min(), current_selection_rules['lift'].max()
-
-        table1_rows = "".join([f'<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:12px 8px;">{clean_frozenset(r["consequents"])}</td><td style="text-align:center;">{r["support"]:.2f}</td><td style="text-align:center;">{r["confidence"]:.2f}</td><td style="text-align:center;">{r["lift"]:.2f}</td><td style="text-align:right;"><span style="background:{"#10b981" if r["lift"] > 1.5 else "#3b82f6"}; color:white; padding:2px 8px; border-radius:4px; font-size:10px;">{"HIGH" if r["lift"] > 1.5 else "MOD"}</span></td></tr>' for _, r in current_selection_rules.nlargest(3, 'lift').iterrows()])
-        spec_list_html = "".join([f'<div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:15px; margin-bottom:12px;"><div style="display:flex; align-items:center; gap:15px;"><div style="width:45px; height:45px; border-radius:50%; background:#eff6ff; display:flex; align-items:center; justify-content:center; color:#3b82f6; font-size:22px;">👨‍⚕️</div><div><div style="font-size:14px; font-weight:700;">{d["role"]}</div><div style="font-size:11px; color:#3b82f6;">{d["condition"]}</div></div></div></div>' for d in specialists_data[:3]])
-
-        adv_modal_content = f"""<div id="advisoryModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:9999; align-items:center; justify-content:center; color:#0f172a;"><div style="background:#fff; width:1000px; max-width:95%; height:90vh; border-radius:24px; padding:40px; overflow-y:auto; box-shadow:0 40px 80px rgba(0,0,0,0.1); border:1px solid #e2e8f0;"><div id="closeAdvisoryBtn" style="position:absolute; top:30px; right:30px; cursor:pointer; font-size:24px;">✕</div><h2>Multi-Disciplinary Consult</h2><div style="display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin:30px 0;"><div>{num_specialties} Specialties</div><div>{high_strength} Associations</div><div>{conf_min:.2f} Min Conf</div><div>{lift_max:.2f} Max Lift</div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:30px;"><div>{table1_rows}</div><div>{spec_list_html}</div></div></div></div>"""
-        consult_trigger_html = f'<div id="advisoryBtn" class="glass-card" style="margin-top:20px; border-left:4px solid #3b82f6; cursor:pointer;"><h3>Multi-Disciplinary Consult</h3><p style="font-size:12px;">Click for recommendations.</p></div>'
-    
-    st_html(consult_trigger_html + adv_modal_content)
+    # --- Specialist Board Trigger ---
+    st_html(f"""
+        <div id="advisoryBtn" class="glass-card" style="margin-top:20px; border-left:4px solid #3b82f6; cursor:pointer;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:18px;">🩺</span><h3 style="margin:0; font-size:15px;">Multi-Disciplinary Consult</h3>
+            </div>
+            <p style="font-size:12px; color:#64748b; margin-top:5px;">AI-assisted specialist recommendations board.</p>
+        </div>
+    """)
 
 with col2: st_html("<div style='height: 80vh;'></div>")
 
 with col3:
     # --- Vitals ---
-    temp_val = 38.5
-    st_html(f"""<div class="vitals-row"><div class="vital-card"><div class="vital-label">Total Visits</div><div class="vital-value">{total_visits}</div><div class="ekg-line"></div></div><div class="vital-card"><div class="vital-label">Avg Events</div><div class="vital-value">{avg_events}</div><div class="ekg-line"></div></div></div><div class="vitals-row"><div class="vital-card">Heart: 82bpm <div class="heart-icon">❤</div></div><div class="vital-card">Brain: 120Hz <div class="brain-icon">🧠</div></div><div class="vital-card">Temp: {temp_val}°C</div></div>""")
+    st_html(f"""
+        <div class="vitals-row">
+            <div class="vital-card"><div class="vital-label">Total Visits</div><div class="vital-value">{total_visits}</div><div class="ekg-line" style="background:linear-gradient(90deg, transparent, #3b82f6, transparent);"></div></div>
+            <div class="vital-card"><div class="vital-label">Avg Events</div><div class="vital-value">{avg_events}</div><div class="ekg-line" style="background:linear-gradient(90deg, transparent, #eab308, transparent);"></div></div>
+        </div>
+        <div class="vitals-row">
+            <div class="vital-card">Heart: <span id="liveHR">82</span>bpm <div class="heart-icon">❤</div></div>
+            <div class="vital-card">Brain: <span id="liveBrain">120</span>Hz <div class="brain-icon">🧠</div></div>
+            <div class="vital-card">Temp: <span id="liveTemp">38.5</span>°C <span style="color:#ef4444;">🌡</span></div>
+        </div>
+    """)
     
-    graph_placeholder = st.empty()
+    # --- Main Heatmap & Graph Placeholder ---
+    graph_container = st.empty()
     
-    # --- Pattern Selection & Algo (Restored Layout) ---
+    # --- Pattern Selection & Algorithm (Restored Footer Layout) ---
     bcol1, bcol2 = st.columns([1, 1.4], gap="small")
     with bcol1:
-        st_html('<div class="glass-card" style="padding:25px; border-top:4px solid #0f172a;"><h3>Pattern Selection</h3>')
+        st_html('<div class="glass-card" style="padding:20px; border-top:4px solid #0f172a;"><h3>Pattern Selection</h3>')
         with st.form("pattern_form"):
             p_diag = st.selectbox("Primary Diagnosis", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['primary_diag']))
             s_diag = st.selectbox("Secondary Condition", ["All"] + all_items, index=(["All"] + all_items).index(st.session_state['secondary_diag']))
-            if st.form_submit_button("Update Analytics", type="primary"):
+            if st.form_submit_button("Update Analytics Board", type="primary"):
                 st.session_state['primary_diag'], st.session_state['secondary_diag'] = p_diag, s_diag
                 st.rerun()
         st_html('</div>')
     
     with bcol2:
-        st_html(f'<div class="glass-card" style="padding:20px;"><h3>Algorithm Comparison</h3><div style="display:flex; justify-content:space-between;"><div>Apriori: {time_apriori}s</div><div>FP-Growth: {time_fp}s</div></div></div>')
+        st_html(f"""
+            <div class="glass-card" style="padding:20px;">
+                <h3>Algorithm Comparison</h3>
+                <div style="display:flex; justify-content:space-between;">
+                    <div><div style="font-size:12px;">Apriori</div><div style="font-size:24px; font-weight:700;">{time_apriori}s</div></div>
+                    <div style="border-left:1px solid #e2e8f0; padding-left:15px;"><div style="font-size:12px;">FP-Growth</div><div style="font-size:24px; font-weight:700;">{time_fp}s</div></div>
+                </div>
+            </div>
+        """)
 
-with graph_placeholder.container():
-    # --- Metric Matrix (Restored Colors and Position) ---
+with graph_container.container():
+    # --- Metric Matrix (Restored Visuals) ---
     if current_selection_rules is not None and len(current_selection_rules) > 0:
         top_matrix = current_selection_rules.nlargest(5, 'lift')
-        table_html = "<table style='width:100%; border-collapse:collapse; font-size:12px;'><tr><th>#</th><th>Metric Matrix</th><th>Support</th><th>Confidence</th></tr>"
+        table_html = "<table style='width:100%; border-collapse:collapse; font-size:12px;'>"
+        table_html += "<tr><th style='text-align:left; border-bottom:2px solid #e2e8f0;'>#</th><th style='text-align:left; border-bottom:2px solid #e2e8f0;'>Metric Matrix</th><th style='text-align:center; border-bottom:2px solid #e2e8f0;'>Support</th><th style='text-align:center; border-bottom:2px solid #e2e8f0;'>Confidence</th></tr>"
+        
         cmap_sup, cmap_conf = plt.get_cmap('Blues'), plt.get_cmap('Reds')
         for i, (idx, row) in enumerate(top_matrix.iterrows(), 1):
             s_v, c_v = row['support'], row['confidence']
             s_n, c_n = min(1.0, max(0.2, s_v / 0.2)), min(1.0, max(0.2, c_v / 1.0))
             bg_s, bg_c = mcolors.to_hex(cmap_sup(s_n)), mcolors.to_hex(cmap_conf(c_n))
-            table_html += f'<tr><td>{i}</td><td>{clean_frozenset(row["antecedents"])} &rarr; {clean_frozenset(row["consequents"])}</td><td style="background:{bg_s}; color:{"#fff" if s_n > 0.5 else "#000"};">{s_v:.2f}</td><td style="background:{bg_c}; color:{"#fff" if c_n > 0.5 else "#000"};">{c_v:.2f}</td></tr>'
+            tc_s, tc_c = ("#fff" if s_n > 0.5 else "#000"), ("#fff" if c_n > 0.5 else "#000")
+            table_html += f'<tr><td style="font-weight:700;">{i}</td><td>{clean_frozenset(row["antecedents"])} &rarr; {clean_frozenset(row["consequents"])}</td><td style="background:{bg_s}; color:{tc_s}; text-align:center; padding:5px;">{s_v:.2f}</td><td style="background:{bg_c}; color:{tc_c}; text-align:center; padding:5px;">{c_v:.2f}</td></tr>'
         table_html += "</table>"
         
-        st_html(f"""<div class="glass-card" style="padding:25px; margin-bottom:20px;"><h3>Comorbidity Heatmap & Graph Hybrid</h3><div style="margin-bottom:25px;"><h4>Clinical Metric Matrix</h4>{table_html}</div><div style="display:flex; gap:25px;"><div style="flex:1.2; height:200px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center;">[Flowchart Visualization Anchor]</div><div style="flex:1; font-size:11px;"><b>Metric Key:</b><br><div style="width:100px; height:10px; background:linear-gradient(to right, #eff6ff, #1d4ed8);"></div> Support<br><div style="width:100px; height:10px; background:linear-gradient(to right, #fef2f2, #b91c1c);"></div> Confidence</div></div></div>""")
+        st_html(f"""
+            <div class="glass-card" style="padding:25px;">
+                <h3>Comorbidity Heatmap & Graph Hybrid</h3>
+                <div style="margin-bottom:25px;"><h4>Clinical Metric Matrix</h4>{table_html}</div>
+                <div style="display:flex; gap:25px; align-items:flex-start;">
+                    <div style="flex:1.2; height:220px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center;">
+                        <svg width="100%" height="100%" viewBox="0 0 400 200">
+                            <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="#94a3b8" /></marker></defs>
+                            <line x1="80" y1="90" x2="220" y2="40" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)" />
+                            <line x1="80" y1="90" x2="220" y2="90" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)" />
+                            <rect x="20" y="75" width="80" height="30" rx="15" fill="#3b82f6" /><text x="60" y="94" fill="white" font-size="10" text-anchor="middle">Profile</text>
+                            <rect x="220" y="25" width="80" height="30" rx="15" fill="#ef4444" /><text x="260" y="44" fill="white" font-size="10" text-anchor="middle">Comorbid</text>
+                            <rect x="220" y="75" width="80" height="30" rx="15" fill="#f59e0b" /><text x="260" y="94" fill="white" font-size="10" text-anchor="middle">Progression</text>
+                        </svg>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:12px; font-weight:700; margin-bottom:10px;">Metric Heatmap Key:</div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div style="display:flex; align-items:center; gap:8px;"><div style="width:40px; height:8px; background:linear-gradient(to right, #eff6ff, #1d4ed8); border-radius:4px;"></div> <span style="font-size:10px;">Support</span></div>
+                            <div style="display:flex; align-items:center; gap:8px;"><div style="width:40px; height:8px; background:linear-gradient(to right, #fef2f2, #b91c1c); border-radius:4px;"></div> <span style="font-size:10px;">Confidence</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        """)
 
-# --- Modals JS ---
+# --- All Modals (Restored) ---
+SPECIALIST_MAP = {
+    'Hypertension': {'role': 'Cardiologist', 'qualifier': 'Expert in vascular tension.'},
+    'Diabetes': {'role': 'Endocrinologist', 'qualifier': 'Expert in metabolic regulation.'},
+    'Asthma': {'role': 'Pulmonologist', 'qualifier': 'Specializes in airway management.'},
+}
+
+st_html(f"""
+    <div id="appointmentsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:500px;"><h3>Upcoming Appointments</h3><p>Oct 24 - Endocrinology</p><p>Oct 27 - Cardiology</p><button id="closeApps" style="margin-top:10px;">Close</button></div>
+    </div>
+    <div id="scheduleModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:500px;"><h3>Daily Schedule</h3><p>08:00 - Morning Vitals</p><p>12:00 - Glucose Check</p><button id="closeSched" style="margin-top:10px;">Close</button></div>
+    </div>
+    <div id="labsModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.2); backdrop-filter:blur(15px); z-index:10000; align-items:center; justify-content:center;">
+        <div class="glass-card" style="width:600px;"><h3>Labs Results</h3><p>HbA1c: 6.8% (High)</p><p>LDL: 112 mg/dL (High)</p><button id="closeLabs" style="margin-top:10px;">Close</button></div>
+    </div>
+""")
+
+# --- JS Logic ---
 st_html("""
 <script>
-    const doc = window.parent.document;
-    const advisoryBtn = doc.getElementById('advisoryBtn');
-    const advisoryModal = doc.getElementById('advisoryModal');
-    const closeAdvisory = doc.getElementById('closeAdvisoryBtn');
-    if(advisoryBtn && advisoryModal) {
-        advisoryBtn.onclick = () => advisoryModal.style.display = 'flex';
-        closeAdvisory.onclick = () => advisoryModal.style.display = 'none';
-        advisoryModal.onclick = (e) => { if(e.target === advisoryModal) advisoryModal.style.display = 'none'; };
-    }
+    const p = window.parent.document;
+    const bindModal = (btnId, modalId, closeId) => {
+        const btn = p.getElementById(btnId);
+        const modal = p.getElementById(modalId);
+        const close = p.getElementById(closeId);
+        if(btn && modal) {
+            btn.onclick = () => modal.style.display = 'flex';
+            if(close) close.onclick = () => modal.style.display = 'none';
+        }
+    };
+    bindModal('advisoryBtn', 'advisoryModal', 'closeAdvisoryBtn');
+    bindModal('navAppointments', 'appointmentsModal', 'closeApps');
+    bindModal('navSchedule', 'scheduleModal', 'closeSched');
+    bindModal('navLabs', 'labsModal', 'closeLabs');
+    
+    // Live Vitals
+    setInterval(() => {
+        const hr = p.getElementById('liveHR');
+        const br = p.getElementById('liveBrain');
+        const te = p.getElementById('liveTemp');
+        if(hr) hr.innerText = 80 + Math.floor(Math.random() * 10);
+        if(br) br.innerText = 110 + Math.floor(Math.random() * 40);
+        if(te) te.innerText = (38.2 + Math.random() * 0.6).toFixed(1);
+    }, 2000);
 </script>
 """)

@@ -75,11 +75,11 @@ Discovered rules are passed through a **Specialist Mapping Layer** that translat
 
 ### 👨‍⚕️ Multi-Disciplinary Consult Board
 *High-fidelity specialist recommendations and clinical evidence.*
-![Consult Board](https://raw.githubusercontent.com/Alan-911/clinical-comorbidity-dashboard/main/visualizations/network_graph.png)
+<img src="https://raw.githubusercontent.com/Alan-911/clinical-comorbidity-dashboard/main/visualizations/network_graph.png" width="600px">
 
 ### ⛓ Comorbidity Network Graph
 *Visualizing the complex web of medical associations.*
-![Network Graph](https://raw.githubusercontent.com/Alan-911/clinical-comorbidity-dashboard/main/visualizations/network_graph.png)
+<img src="https://raw.githubusercontent.com/Alan-911/clinical-comorbidity-dashboard/main/visualizations/network_graph.png" width="600px">
 
 ---
 
