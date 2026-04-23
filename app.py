@@ -53,11 +53,23 @@ div[data-testid="stVerticalBlock"]>div{gap:0!important;}
 [data-testid="stAppViewContainer"],[data-testid="stMain"],section.main,.main{transform:none!important;filter:none!important;perspective:none!important;will-change:auto!important;}
 /* Animations — static transform only, no continuous spin for performance */
 @keyframes fadeIn{from{opacity:0;}to{opacity:0.6;}}
+/* ── SAFETY OVERRIDES — force UI fully bright & interactive after script runs ── */
+.block-container,[data-testid="stAppViewContainer"],[data-testid="stMain"],section.main,.main{opacity:1!important;pointer-events:auto!important;filter:none!important;}
+/* Kill Streamlit's "running" dim overlay if it sticks */
+[data-testid="stStatusWidget"]{opacity:1!important;}
+div[data-testid="stDecoration"]{display:none!important;}
+/* Ensure dialog/modal backdrops don't persist after close */
+div[role="dialog"]~div[data-baseweb="modal"]:empty{display:none!important;}
+/* Form controls & buttons always interactive */
+[data-testid="stForm"],[data-testid="stForm"] *,[data-testid="stButton"] button{opacity:1!important;pointer-events:auto!important;}
 </style>
 """, unsafe_allow_html=True)
 
-if 'primary_diag' not in st.session_state: st.session_state['primary_diag'] = "All"
-if 'secondary_diag' not in st.session_state: st.session_state['secondary_diag'] = "All"
+# ── Session state initialization (Step 4) ──
+_DEFAULTS = {"primary_diag": "All", "secondary_diag": "All", "data_ready": False}
+for _k, _v in _DEFAULTS.items():
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
 
 def st_html(h): st.markdown(re.sub(r'\n\s*', ' ', h), unsafe_allow_html=True)
 
@@ -77,12 +89,13 @@ def clean_fs(x):
     c = re.sub(r"frozenset|[{}()\[\]'\"]", "", str(x))
     return re.sub(r',\s*', ', ', re.sub(r'\s+', ' ', c)).strip().strip(",")
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def get_data():
     rp = os.path.join(base_path,"data_processed","association_rules.csv")
-    if os.path.exists(rp): rules = pd.read_csv(rp)
-    else:
-        try:
+    try:
+        if os.path.exists(rp):
+            rules = pd.read_csv(rp)
+        else:
             df = pd.read_csv(os.path.join(base_path,"transactions","transactions.csv"))
             te = TransactionEncoder()
             arr = te.fit([str(i).split(",") for i in df["Items"]]).transform([str(i).split(",") for i in df["Items"]])
@@ -90,15 +103,29 @@ def get_data():
             rules = association_rules(fi, metric="confidence", min_threshold=0.5)
             os.makedirs(os.path.dirname(rp), exist_ok=True)
             rules.to_csv(rp, index=False)
-        except: return None
-    items = set()
-    for v in rules['antecedents'].tolist()+rules['consequents'].tolist():
-        items.update([i.strip() for i in clean_fs(v).split(",") if i.strip()])
-    return rules, sorted(items)
+        items = set()
+        for v in rules['antecedents'].tolist()+rules['consequents'].tolist():
+            items.update([i.strip() for i in clean_fs(v).split(",") if i.strip()])
+        return rules, sorted(items)
+    except Exception as e:
+        return None, str(e)
 
-data = get_data()
-if not data: st.stop()
+# ── Load data with explicit spinner and error surfacing (Steps 1, 3, 6) ──
+with st.spinner("Loading clinical rules..."):
+    data = get_data()
+
+if data is None or data[0] is None:
+    err = data[1] if data and len(data) > 1 else "Unknown data-loading error"
+    st.error(f"Could not load association rules: {err}")
+    st.warning("Verify that transactions/transactions.csv or data_processed/association_rules.csv exists.")
+    st.stop()
+
 rules_df, all_items = data
+if rules_df is None or rules_df.empty:
+    st.warning("No association rules available. Please regenerate the dataset.")
+    st.stop()
+
+st.session_state["data_ready"] = True
 
 @st.cache_data(show_spinner=False)
 def _filter_rules(primary, secondary):
@@ -553,8 +580,10 @@ with right_bottom:
                              index=(["All"] + all_items).index(st.session_state['secondary_diag']))
             submitted = st.form_submit_button("Apply Filters", type="primary", use_container_width=True)
             if submitted:
+                # Forms auto-rerun on submit — no explicit st.rerun() needed.
+                # The explicit call caused a double-rerun, leaving the UI in a
+                # stuck "executing" (dimmed) state.
                 st.session_state['primary_diag'], st.session_state['secondary_diag'] = p, s
-                st.rerun()
     with ac_col:
         st_html(algo_comparison_html)
 
