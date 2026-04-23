@@ -97,8 +97,9 @@ html,body,[class*="css"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'S
 div[data-testid="stVerticalBlock"]>div{gap:0!important;}
 /* Stacking context: prevent Streamlit containers trapping overlays */
 [data-testid="stAppViewContainer"],[data-testid="stMain"],section.main,.main{transform:none!important;filter:none!important;perspective:none!important;will-change:auto!important;}
-/* Animations — static transform only, no continuous spin for performance */
-@keyframes fadeIn{from{opacity:0;}to{opacity:0.6;}}
+/* Animations — fade-in + slow 360° rotation on the central anatomical image */
+@keyframes fadeIn{from{opacity:0;}to{opacity:0.55;}}
+@keyframes spin360{from{transform:translate(-38%,-50%) rotate(0deg);}to{transform:translate(-38%,-50%) rotate(360deg);}}
 /* ── SAFETY OVERRIDES — force UI fully bright & interactive after script runs ── */
 .block-container,[data-testid="stAppViewContainer"],[data-testid="stMain"],section.main,.main{opacity:1!important;pointer-events:auto!important;filter:none!important;}
 /* Kill Streamlit's "running" dim overlay if it sticks */
@@ -128,7 +129,7 @@ bg_html = ""
 try:
     b64 = _b64(os.path.join(base_path,"visualizations","anatomical_model.png"))
     # Static positioning (no spin animation) for much better rendering performance
-    bg_html = f'<img src="data:image/png;base64,{b64}" style="position:fixed;top:50%;left:38%;height:80vh;z-index:0;opacity:0.55;pointer-events:none;transform:translate(-38%,-50%);animation:fadeIn 0.6s ease forwards;will-change:auto;">'
+    bg_html = f'<img src="data:image/png;base64,{b64}" style="position:fixed;top:50%;left:38%;height:80vh;z-index:0;opacity:0.55;pointer-events:none;transform-origin:center center;animation:fadeIn 0.8s ease forwards,spin360 40s linear infinite;will-change:transform;">'
 except: pass
 
 def clean_fs(x):
