@@ -19,18 +19,19 @@ st.markdown("""
 .block-container{padding:0.5rem 1rem!important;max-width:100%!important;}
 html,body,[class*="css"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif!important;color:#0f172a;}
 .stApp{background-color:#f8fafc;background-image:linear-gradient(to right,#e2e8f0 1px,transparent 1px),linear-gradient(to bottom,#e2e8f0 1px,transparent 1px);background-size:40px 40px;}
-.gc{background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.8);border-radius:15px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,0.07);margin-bottom:15px;}
-.vc{flex:1;padding:14px;border-radius:14px;background:#fff;box-shadow:0 4px 15px rgba(0,0,0,0.05);}
-.ekg{height:24px;width:100%;margin-top:8px;background-size:100px 100%;animation:moveEKG 1s linear infinite;opacity:0.5;}
+/* Performance-optimized: solid backgrounds instead of expensive backdrop-filter */
+.gc{background:#ffffff;border:1px solid #e2e8f0;border-radius:15px;padding:18px;box-shadow:0 4px 12px rgba(0,0,0,0.05);margin-bottom:15px;}
+.vc{flex:1;padding:14px;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.ekg{height:24px;width:100%;margin-top:8px;background-size:100px 100%;opacity:0.5;}
 .ti{margin-bottom:10px;padding-left:14px;border-left:2px solid #e2e8f0;position:relative;}
 .ti::before{content:'';position:absolute;left:-6px;top:2px;width:10px;height:10px;border-radius:50%;background:#3b82f6;}
 .ap{border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;background:#f8fafc;}
-.mid-stat{background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.7);border-radius:14px;padding:14px 10px;text-align:center;margin-bottom:12px;box-shadow:0 4px 15px rgba(0,0,0,0.05);}
-[data-testid="stForm"]{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.8)!important;border-radius:15px!important;padding:4px 18px 18px!important;box-shadow:0 10px 30px rgba(0,0,0,0.07)!important;margin-top:0!important;}
+.mid-stat{background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 10px;text-align:center;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+[data-testid="stForm"]{background:#ffffff!important;border:1px solid #e2e8f0!important;border-radius:15px!important;padding:4px 18px 18px!important;box-shadow:0 4px 12px rgba(0,0,0,0.05)!important;margin-top:0!important;}
 [data-testid="stForm"] label{font-size:12px;font-weight:600;color:#64748b;}
 [data-testid="stForm"] .stFormSubmitButton button{border-radius:8px;}
 /* Pill-shaped nav bar — wraps the container keyed "navbar" */
-.st-key-navbar{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border-radius:100px!important;box-shadow:0 4px 20px rgba(0,0,0,0.05)!important;padding:6px 28px!important;margin-bottom:18px!important;position:relative;z-index:10;}
+.st-key-navbar{background:#ffffff!important;border:1px solid #e2e8f0!important;border-radius:100px!important;box-shadow:0 2px 10px rgba(0,0,0,0.04)!important;padding:6px 28px!important;margin-bottom:18px!important;position:relative;z-index:10;}
 .nav-brand{font-weight:700;font-size:19px;line-height:40px;color:#0f172a;}
 /* Nav buttons inside the pill: transparent, styled as links */
 .st-key-navbar [data-testid="stButton"] button{background:transparent!important;border:none!important;color:#64748b!important;font-size:13px!important;font-weight:600!important;padding:10px 12px!important;height:auto!important;box-shadow:none!important;min-height:0!important;line-height:1.2!important;}
@@ -40,9 +41,9 @@ html,body,[class*="css"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'S
 /* Patient badge button — right-aligned, smaller, bolder */
 .st-key-nav_patient button{color:#0f172a!important;font-weight:800!important;font-size:10px!important;text-align:right!important;letter-spacing:0.5px;}
 /* Card frames for demographic + advisory buttons in the left column */
-.st-key-card_demo button,.st-key-card_advisory button{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.8)!important;border-radius:15px!important;padding:18px 20px!important;box-shadow:0 10px 30px rgba(0,0,0,0.07)!important;text-align:left!important;font-weight:700!important;font-size:14px!important;color:#0f172a!important;height:auto!important;white-space:pre-wrap!important;line-height:1.5!important;margin-bottom:15px!important;width:100%!important;min-height:0!important;}
-.st-key-card_demo button:hover,.st-key-card_advisory button:hover{box-shadow:0 14px 34px rgba(59,130,246,0.2)!important;border-color:rgba(59,130,246,0.35)!important;transform:translateY(-2px);}
-.st-key-card_demo button:focus,.st-key-card_advisory button:focus{box-shadow:0 10px 30px rgba(0,0,0,0.07)!important;outline:none!important;}
+.st-key-card_demo button,.st-key-card_advisory button{background:#ffffff!important;border:1px solid #e2e8f0!important;border-radius:15px!important;padding:18px 20px!important;box-shadow:0 4px 12px rgba(0,0,0,0.05)!important;text-align:left!important;font-weight:700!important;font-size:14px!important;color:#0f172a!important;height:auto!important;white-space:pre-wrap!important;line-height:1.5!important;margin-bottom:15px!important;width:100%!important;min-height:0!important;transition:box-shadow 0.15s ease;}
+.st-key-card_demo button:hover,.st-key-card_advisory button:hover{box-shadow:0 6px 18px rgba(59,130,246,0.15)!important;border-color:rgba(59,130,246,0.35)!important;}
+.st-key-card_demo button:focus,.st-key-card_advisory button:focus{box-shadow:0 4px 12px rgba(0,0,0,0.05)!important;outline:none!important;}
 .st-key-card_demo button{border-left:4px solid #7c3aed!important;}
 .st-key-card_advisory button{border-left:4px solid #3b82f6!important;}
 /* Remove Streamlit's default element spacing that breaks layout */
@@ -50,9 +51,8 @@ html,body,[class*="css"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'S
 div[data-testid="stVerticalBlock"]>div{gap:0!important;}
 /* Stacking context: prevent Streamlit containers trapping overlays */
 [data-testid="stAppViewContainer"],[data-testid="stMain"],section.main,.main{transform:none!important;filter:none!important;perspective:none!important;will-change:auto!important;}
-/* Animations */
-@keyframes spin3D{from{transform:translate(-38%,-50%) rotateY(0deg);}to{transform:translate(-38%,-50%) rotateY(360deg);}}
-@keyframes moveEKG{from{background-position:0 0;}to{background-position:-100px 0;}}
+/* Animations — static transform only, no continuous spin for performance */
+@keyframes fadeIn{from{opacity:0;}to{opacity:0.6;}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -69,7 +69,8 @@ base_path = os.path.dirname(os.path.abspath(__file__))
 bg_html = ""
 try:
     b64 = _b64(os.path.join(base_path,"visualizations","anatomical_model.png"))
-    bg_html = f'<img src="data:image/png;base64,{b64}" style="position:fixed;top:55%;left:38%;height:85vh;z-index:0;opacity:0.8;pointer-events:none;animation:spin3D 30s linear infinite;transform-style:preserve-3d;">'
+    # Static positioning (no spin animation) for much better rendering performance
+    bg_html = f'<img src="data:image/png;base64,{b64}" style="position:fixed;top:50%;left:38%;height:80vh;z-index:0;opacity:0.55;pointer-events:none;transform:translate(-38%,-50%);animation:fadeIn 0.6s ease forwards;will-change:auto;">'
 except: pass
 
 def clean_fs(x):
@@ -99,12 +100,16 @@ data = get_data()
 if not data: st.stop()
 rules_df, all_items = data
 
-f = rules_df.copy()
-if st.session_state['primary_diag'] != "All":
-    f = f[f['antecedents'].apply(lambda x: st.session_state['primary_diag'] in str(x))]
-if st.session_state['secondary_diag'] != "All":
-    f = f[f['consequents'].apply(lambda x: st.session_state['secondary_diag'] in str(x))]
-f = f.sort_values('lift', ascending=False)
+@st.cache_data(show_spinner=False)
+def _filter_rules(primary, secondary):
+    f = rules_df.copy()
+    if primary != "All":
+        f = f[f['antecedents'].apply(lambda x: primary in str(x))]
+    if secondary != "All":
+        f = f[f['consequents'].apply(lambda x: secondary in str(x))]
+    return f.sort_values('lift', ascending=False)
+
+f = _filter_rules(st.session_state['primary_diag'], st.session_state['secondary_diag'])
 
 # --- Pre-build HTML strings ---
 plan_html = ""
@@ -557,10 +562,10 @@ with right_bottom:
 # Partnership branding banner
 # ────────────────────────────────────────────────────────────────────────────
 st_html("""
-<div style="margin-top:10px;background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-     border:1px solid rgba(255,255,255,0.8);border-radius:16px;padding:22px 32px;
+<div style="margin-top:10px;background:#ffffff;
+     border:1px solid #e2e8f0;border-radius:16px;padding:22px 32px;
      display:flex;align-items:center;justify-content:space-between;
-     box-shadow:0 10px 30px rgba(0,0,0,0.07);">
+     box-shadow:0 4px 12px rgba(0,0,0,0.05);">
   <div style="display:flex;align-items:center;gap:18px;">
     <div style="width:48px;height:48px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);
          border-radius:14px;display:flex;align-items:center;justify-content:center;
