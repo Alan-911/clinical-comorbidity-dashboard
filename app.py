@@ -51,8 +51,17 @@ html,body,[class*="css"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'S
 .ap{border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;background:#f8fafc;}
 .mid-stat{background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 10px;text-align:center;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
 [data-testid="stForm"]{background:#ffffff!important;border:1px solid #e2e8f0!important;border-radius:15px!important;padding:4px 18px 18px!important;box-shadow:0 4px 12px rgba(0,0,0,0.05)!important;margin-top:0!important;}
-[data-testid="stForm"] label{font-size:12px;font-weight:600;color:#64748b;}
+[data-testid="stForm"] label{font-size:12px!important;font-weight:700!important;color:#3b82f6!important;letter-spacing:0.5px;text-transform:uppercase;}
 [data-testid="stForm"] .stFormSubmitButton button{border-radius:8px;}
+/* ── Selectbox styling: make Primary / Secondary Diagnosis clearly visible ── */
+[data-testid="stForm"] [data-baseweb="select"]>div{background:linear-gradient(135deg,#eff6ff,#dbeafe)!important;border:1.5px solid #3b82f6!important;border-radius:10px!important;min-height:42px!important;box-shadow:0 2px 6px rgba(59,130,246,0.15)!important;transition:all 0.15s ease;}
+[data-testid="stForm"] [data-baseweb="select"]>div:hover{border-color:#1d4ed8!important;box-shadow:0 4px 12px rgba(59,130,246,0.25)!important;}
+[data-testid="stForm"] [data-baseweb="select"] [data-baseweb="tag"],[data-testid="stForm"] [data-baseweb="select"] span,[data-testid="stForm"] [data-baseweb="select"] input,[data-testid="stForm"] [data-baseweb="select"] div[role="button"]{color:#0f172a!important;font-weight:700!important;font-size:14px!important;}
+[data-testid="stForm"] [data-baseweb="select"] svg{fill:#3b82f6!important;color:#3b82f6!important;}
+/* Dropdown popover menu — visible options */
+[data-baseweb="popover"] [role="listbox"],[data-baseweb="menu"] ul,div[data-baseweb="popover"] ul{background:#ffffff!important;border:1px solid #3b82f6!important;border-radius:10px!important;box-shadow:0 8px 24px rgba(0,0,0,0.12)!important;}
+[data-baseweb="popover"] li,[data-baseweb="menu"] li,div[data-baseweb="popover"] [role="option"]{color:#0f172a!important;font-weight:600!important;font-size:13px!important;padding:8px 12px!important;}
+[data-baseweb="popover"] li:hover,[data-baseweb="menu"] li:hover,div[data-baseweb="popover"] [role="option"]:hover,[role="option"][aria-selected="true"]{background:linear-gradient(135deg,#eff6ff,#dbeafe)!important;color:#1d4ed8!important;}
 /* Pill-shaped nav bar — wraps the container keyed "navbar" */
 .st-key-navbar{background:#ffffff!important;border:1px solid #e2e8f0!important;border-radius:100px!important;box-shadow:0 2px 10px rgba(0,0,0,0.04)!important;padding:6px 28px!important;margin-bottom:18px!important;position:relative;z-index:10;}
 .nav-brand{font-weight:700;font-size:19px;line-height:40px;color:#0f172a;}
