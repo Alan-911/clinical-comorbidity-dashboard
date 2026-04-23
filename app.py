@@ -186,6 +186,10 @@ algo_comparison_html = f"""<div class="gc">
 @st.dialog("⚕ Dashboard Overview", width="large")
 def dlg_dashboard():
     st.markdown(f"""
+    <div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:14px 18px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">DASHBOARD OVERVIEW</div><div style="font-size:22px;font-weight:700;">{total_rules} rules analyzed</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">ALGORITHM</div><div style="font-size:14px;font-weight:700;">FP-Growth &bull; min_support=0.01</div></div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
       <div style="background:#f8fafc;border-radius:12px;padding:14px;text-align:center;border-top:3px solid #3b82f6;"><div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">TOTAL RULES</div><div style="font-size:28px;font-weight:700;color:#0f172a;">{total_rules}</div></div>
       <div style="background:#f8fafc;border-radius:12px;padding:14px;text-align:center;border-top:3px solid #7c3aed;"><div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">MAX LIFT</div><div style="font-size:28px;font-weight:700;color:#7c3aed;">{max_lift_val}</div></div>
@@ -196,6 +200,7 @@ def dlg_dashboard():
       <div style="background:#f8fafc;border-radius:12px;padding:16px;"><div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">Active Filters</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Primary Diagnosis:</span> <span style="font-weight:700;">{st.session_state['primary_diag']}</span></div><div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Secondary Condition:</span> <span style="font-weight:700;">{st.session_state['secondary_diag']}</span></div></div>
       <div style="background:#f8fafc;border-radius:12px;padding:16px;"><div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">System Info</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Algorithm:</span> FP-Growth (min_support=0.01)</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Dataset:</span> 2,440 clinical visits</div><div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Partner:</span> MedIntel Analytics Corp.</div></div>
     </div>
+    <div style="margin-top:14px;font-size:10px;color:#94a3b8;text-align:center;">Generated from FP-Growth analysis &bull; {total_rules} rules &bull; min_support=0.01</div>
     """, unsafe_allow_html=True)
 
 @st.dialog("Patient #2440")
@@ -235,10 +240,9 @@ def dlg_appointments():
     ]
     urgent = sum(1 for a in appts if a['pri'] == 'URGENT')
 
-    h = f'''<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
-      <div style="background:#fef2f2;padding:12px;border-radius:10px;text-align:center;"><div style="font-size:24px;font-weight:700;color:#ef4444;">{urgent}</div><div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:1px;">URGENT</div></div>
-      <div style="background:#eff6ff;padding:12px;border-radius:10px;text-align:center;"><div style="font-size:24px;font-weight:700;color:#3b82f6;">{len(appts)}</div><div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:1px;">UPCOMING</div></div>
-      <div style="background:#f0fdf4;padding:12px;border-radius:10px;text-align:center;"><div style="font-size:24px;font-weight:700;color:#10b981;">{total_rules}</div><div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:1px;">LINKED RULES</div></div>
+    h = f'''<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:14px 18px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">UPCOMING APPOINTMENTS</div><div style="font-size:22px;font-weight:700;">{len(appts)} scheduled</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">URGENT</div><div style="font-size:14px;font-weight:700;color:#ef4444;">&#9888; {urgent} flagged</div></div>
     </div>'''
 
     for a in appts:
@@ -277,9 +281,9 @@ def dlg_schedule():
         {"t": 16, "task": "Chart Review &amp; Notes",        "room": "Physician Lounge", "dur": 45, "c": "#64748b"},
     ]
 
-    h = f'''<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:14px 18px;border-radius:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">CURRENT TIME</div><div style="font-size:22px;font-weight:700;">{now.strftime('%H:%M')} &bull; {now.strftime('%a %b %d')}</div></div>
-      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">TASKS TODAY</div><div style="font-size:22px;font-weight:700;">{len(sched)}</div></div>
+    h = f'''<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:14px 18px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">DAILY SCHEDULE</div><div style="font-size:22px;font-weight:700;">{now.strftime('%H:%M')} &bull; {now.strftime('%a %b %d')}</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">TASKS TODAY</div><div style="font-size:14px;font-weight:700;">{len(sched)} scheduled</div></div>
     </div>'''
 
     for i in sched:
@@ -307,7 +311,7 @@ def dlg_schedule():
           </div>
         </div>'''
 
-    h += f'<div style="margin-top:12px;font-size:10px;color:#94a3b8;text-align:center;">1 task auto-prioritized from mined rules &bull; Updated {now.strftime("%H:%M")}</div>'
+    h += f'<div style="margin-top:14px;font-size:10px;color:#94a3b8;text-align:center;">1 task auto-prioritized from mined rules &bull; Updated {now.strftime("%H:%M")}</div>'
     st.markdown(h, unsafe_allow_html=True)
 
 @st.dialog("Lab Results", width="large")
@@ -343,8 +347,8 @@ def dlg_labs():
     smap = {"good": ("#10b981", "&#10003; Normal"), "warn": ("#f59e0b", "&#9888; Monitor"), "bad": ("#ef4444", "&#10007; High")}
 
     h = f'''<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:14px 18px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">&#9888; FLAGGED VALUES</div><div style="font-size:22px;font-weight:700;">{len(flagged)} abnormal</div></div>
-      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">PATIENT #2440</div><div style="font-size:13px;font-weight:700;">Last drawn {(now - timedelta(days=3)).strftime('%b %d, %Y')}</div></div>
+      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">LAB RESULTS</div><div style="font-size:22px;font-weight:700;">{len(flagged)} abnormal flagged</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">PATIENT #2440</div><div style="font-size:14px;font-weight:700;">Last drawn {(now - timedelta(days=3)).strftime('%b %d, %Y')}</div></div>
     </div>'''
 
     for p in panels:
