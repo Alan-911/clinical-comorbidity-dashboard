@@ -9,22 +9,18 @@ import matplotlib.colors as mcolors
 
 st.set_page_config(page_title="Clinical Intelligence Dashboard", page_icon="⚕️", layout="wide", initial_sidebar_state="collapsed")
 
-# ── 🔥 OVERLAY KILLER — runs first, before any other CSS ──────────────────────
+# ── 🔥 SURGICAL OVERLAY KILLER — targets true overlay layers only ─────────────
 st.markdown("""
 <style>
-/* Remove any blur / glass effect on every element */
-*{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
-/* Force app shell fully active */
-html,body,.stApp{opacity:1!important;pointer-events:auto!important;filter:none!important;}
-/* Force main container active */
-.block-container{opacity:1!important;pointer-events:auto!important;filter:none!important;}
-/* Remove any faded state from main section */
-section.main,[data-testid="stMain"],[data-testid="stAppViewContainer"]{opacity:1!important;filter:none!important;pointer-events:auto!important;}
-/* Kill Streamlit's stuck decoration/status overlays */
-div[data-testid="stDecoration"]{display:none!important;}
-div[data-testid="stStatusWidget"]{opacity:1!important;}
-/* Neutralize any inline-fixed div that could block interaction (decorative bg imgs keep pointer-events:none) */
-div[style*="position: fixed"]:not([style*="pointer-events:none"]):not([style*="pointer-events: none"]){pointer-events:auto!important;}
+/* Remove ONLY real overlay layers (fixed + z-index), not everything */
+div[style*="position: fixed"][style*="z-index"]{display:none!important;}
+/* Ensure main app is active */
+.stApp,.block-container,section.main{opacity:1!important;filter:none!important;pointer-events:auto!important;}
+/* Remove Streamlit stuck status/loading overlay */
+[data-testid="stStatusWidget"]{display:none!important;}
+[data-testid="stDecoration"]{display:none!important;}
+/* Keep decorative layers (anatomical bg image/canvas) non-blocking */
+img,canvas{pointer-events:none!important;}
 </style>
 """, unsafe_allow_html=True)
 
