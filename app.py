@@ -21,6 +21,14 @@ div[style*="position: fixed"][style*="z-index"]{display:none!important;}
 [data-testid="stDecoration"]{display:none!important;}
 /* Keep decorative layers (anatomical bg image/canvas) non-blocking */
 img,canvas{pointer-events:none!important;}
+/* 🔥 FORCE DARK TEXT — fixes invisible text when Streamlit dark-mode theme overrides our light theme */
+html,body,.stApp,[data-testid="stAppViewContainer"],[data-testid="stMain"],section.main,.block-container,[data-testid="stMarkdownContainer"],[data-testid="stMarkdownContainer"] *,p,span,div,label,h1,h2,h3,h4,h5,h6{color:#0f172a!important;}
+/* Allow elements that explicitly opt into light text (dark gradient cards, badges) to keep white */
+[style*="color:white"],[style*="color: white"],[style*="color:#fff"],[style*="color: #fff"],[style*="color:#ffffff"],[style*="color: #ffffff"]{color:#ffffff!important;}
+/* Specific overrides for muted/grey text */
+[style*="color:#94a3b8"]{color:#94a3b8!important;}
+[style*="color:#64748b"]{color:#64748b!important;}
+[style*="color:#0f172a"]{color:#0f172a!important;}
 </style>
 """, unsafe_allow_html=True)
 
