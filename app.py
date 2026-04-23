@@ -406,23 +406,124 @@ def dlg_labs():
             csv_data += f'{p["name"]},{t["n"]},{t["v"]},"{t["r"].replace("&lt;","<").replace("&gt;",">")}",{t["s"]},{t["d"].strftime("%Y-%m-%d")}\n'
     st.download_button("&#11015; Download Lab Report (CSV)", csv_data, file_name=f"labs_patient2440_{now.strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
 
-@st.dialog("Specialist Advisory Board", width="large")
+@st.dialog("Multi-Disciplinary Consult", width="large")
 def dlg_advisory():
-    st.markdown(f"""
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-      <div style="background:#f8fafc;padding:18px;border-radius:12px;">
-        <h4 style="margin-top:0;">Top Consequent Conditions</h4>
-        {advisory_items_html}
+    # Map condition keywords -> specialist recommendations drawn from mined rules
+    SPECIALTY_MAP = [
+        ("Diabetes",       "Endocrinology",   "&#129658;", "#3b82f6", "HbA1c optimization + medication titration"),
+        ("HbA1c",          "Endocrinology",   "&#129658;", "#3b82f6", "Glycemic control review"),
+        ("Heart",          "Cardiology",      "&#10084;",  "#ef4444", "ECG + echo, lipid panel, beta-blocker review"),
+        ("Hypertension",   "Cardiology",      "&#10084;",  "#ef4444", "BP monitoring + ACE/ARB therapy assessment"),
+        ("Cholesterol",    "Cardiology",      "&#10084;",  "#ef4444", "Statin intensification + LDL target review"),
+        ("Statin",         "Cardiology",      "&#10084;",  "#ef4444", "Statin tolerability + LFT monitoring"),
+        ("Beta Blocker",   "Cardiology",      "&#10084;",  "#ef4444", "Cardioprotective therapy optimization"),
+        ("Kidney",         "Nephrology",      "&#129421;", "#10b981", "eGFR trending + ACE-I renal protection"),
+        ("Arthritis",      "Rheumatology",    "&#129504;", "#f59e0b", "DMARD review + joint function assessment"),
+        ("Asthma",         "Pulmonology",     "&#129729;", "#06b6d4", "Inhaler technique + spirometry follow-up"),
+        ("Anxiety",        "Psychiatry",      "&#129504;", "#7c3aed", "Medication review + CBT referral"),
+        ("Migraine",       "Neurology",       "&#129504;", "#7c3aed", "Prophylaxis evaluation + trigger mapping"),
+        ("Age_Senior",     "Geriatrics",      "&#129491;", "#64748b", "Polypharmacy audit + fall risk screening"),
+        ("Age_Adult",      "Internal Medicine","&#129489;","#3b82f6", "Preventive care + annual wellness"),
+        ("Age_Young",      "Family Medicine", "&#129490;", "#10b981", "Lifestyle counseling + screening"),
+    ]
+
+    # Build specialist recommendations from current top_conds (already computed)
+    seen_specs = set()
+    specialists = []
+    # Also pull antecedent terms for broader specialist mapping
+    all_tokens = list(top_conds)
+    if len(f) > 0:
+        for _, _row in f.nlargest(6, 'lift').iterrows():
+            for _tok in clean_fs(_row['antecedents']).split(','):
+                _tok = _tok.strip()
+                if _tok:
+                    all_tokens.append(_tok)
+
+    for tok in all_tokens:
+        for kw, spec, ic, c, action in SPECIALTY_MAP:
+            if kw.lower() in tok.lower() and spec not in seen_specs:
+                seen_specs.add(spec)
+                # Find the strongest rule this specialist is linked to
+                related_rule = None
+                if len(f) > 0:
+                    for _, r in f.nlargest(10, 'lift').iterrows():
+                        if kw.lower() in str(r['antecedents']).lower() or kw.lower() in str(r['consequents']).lower():
+                            related_rule = r
+                            break
+                specialists.append({
+                    "tok": tok, "spec": spec, "ic": ic, "c": c, "action": action,
+                    "rule": related_rule,
+                })
+                break
+        if len(specialists) >= 4:
+            break
+
+    if not specialists:
+        specialists = [{"tok": "General", "spec": "Internal Medicine", "ic": "&#129489;",
+                        "c": "#64748b", "action": "Routine comorbidity review", "rule": None}]
+
+    # Risk stratification from lift
+    if max_lift_val >= 5:
+        risk_label, risk_bg, risk_c = "HIGH RISK", "#fef2f2", "#ef4444"
+        risk_note = "Strong multi-condition associations detected. Urgent coordinated review advised."
+    elif max_lift_val >= 2:
+        risk_label, risk_bg, risk_c = "MODERATE RISK", "#fffbeb", "#f59e0b"
+        risk_note = "Notable comorbidity patterns. Schedule coordinated specialist follow-up."
+    else:
+        risk_label, risk_bg, risk_c = "LOW RISK", "#f0fdf4", "#10b981"
+        risk_note = "Standard monitoring. No immediate multi-specialty escalation required."
+
+    h = f'''<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:14px 18px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">MULTI-DISCIPLINARY CONSULT</div><div style="font-size:22px;font-weight:700;">{len(specialists)} specialists recommended</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">RISK TIER</div><div style="font-size:14px;font-weight:700;color:{risk_c};">&#9888; {risk_label}</div></div>
+    </div>'''
+
+    # Evidence strip
+    h += f'''<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div style="background:#f8fafc;border-top:3px solid #3b82f6;border-radius:10px;padding:10px 12px;text-align:center;"><div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">MATCHING RULES</div><div style="font-size:22px;font-weight:700;color:#0f172a;">{filtered_count}</div></div>
+      <div style="background:#f8fafc;border-top:3px solid #7c3aed;border-radius:10px;padding:10px 12px;text-align:center;"><div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">MAX LIFT</div><div style="font-size:22px;font-weight:700;color:#7c3aed;">{max_lift_val}</div></div>
+      <div style="background:#f8fafc;border-top:3px solid #10b981;border-radius:10px;padding:10px 12px;text-align:center;"><div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">AVG CONFIDENCE</div><div style="font-size:22px;font-weight:700;color:#10b981;">{avg_conf}%</div></div>
+      <div style="background:#f8fafc;border-top:3px solid #f59e0b;border-radius:10px;padding:10px 12px;text-align:center;"><div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">SPECIALTIES</div><div style="font-size:22px;font-weight:700;color:#f59e0b;">{len(specialists)}</div></div>
+    </div>'''
+
+    # Specialist cards
+    h += '<div style="font-size:11px;font-weight:800;color:#0f172a;letter-spacing:1.5px;margin:14px 0 8px;">RECOMMENDED SPECIALIST BOARD</div>'
+    for sp in specialists:
+        rule_html = ""
+        if sp["rule"] is not None:
+            ant = clean_fs(sp["rule"]["antecedents"])
+            con = clean_fs(sp["rule"]["consequents"])
+            rule_html = f'<div style="margin-top:8px;padding:8px 10px;background:rgba(255,255,255,0.7);border-radius:6px;font-size:10px;color:#475569;border-left:2px solid {sp["c"]};"><b style="color:{sp["c"]};">Triggered by rule:</b> {ant[:34]}{"..." if len(ant)>34 else ""} &rarr; {con[:28]}{"..." if len(con)>28 else ""} <span style="color:#94a3b8;">(lift {sp["rule"]["lift"]:.2f}, conf {sp["rule"]["confidence"]*100:.0f}%)</span></div>'
+
+        h += f'''<div style="background:#f8fafc;border-left:4px solid {sp["c"]};border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:{sp["c"]};color:white;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">{sp["ic"]}</div>
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+                <div style="font-size:14px;font-weight:700;color:#0f172a;">{sp["spec"]}</div>
+                <span style="font-size:9px;background:{sp["c"]};color:white;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.3px;">LINK: {sp["tok"][:18]}</span>
+              </div>
+              <div style="font-size:11px;color:#64748b;">&#8627; {sp["action"]}</div>
+            </div>
+          </div>
+          {rule_html}
+        </div>'''
+
+    # Care coordination actions
+    h += f'''<div style="background:{risk_bg};border-left:4px solid {risk_c};border-radius:0 10px 10px 0;padding:12px 16px;margin-top:14px;">
+      <div style="font-size:10px;font-weight:800;color:{risk_c};letter-spacing:1px;margin-bottom:6px;">CARE COORDINATION PLAN</div>
+      <div style="font-size:11px;color:#475569;line-height:1.6;margin-bottom:8px;">{risk_note}</div>
+      <div style="font-size:11px;color:#0f172a;"><b>Suggested next actions:</b></div>
+      <div style="font-size:11px;color:#475569;margin-top:4px;line-height:1.7;">
+        &#10003; Share FP-Growth rule set ({filtered_count} matches) with all {len(specialists)} specialists<br>
+        &#10003; Schedule joint case conference within 7-14 days<br>
+        &#10003; Order consolidated labs panel before next visit<br>
+        &#10003; Flag high-lift chains (&ge;{round(max_lift_val*0.8,1)}) for priority review
       </div>
-      <div style="background:#f8fafc;padding:18px;border-radius:12px;">
-        <h4 style="margin-top:0;">Evidence Summary</h4>
-        <div style="font-size:13px;margin-bottom:8px;">&#128200; Max Lift: <b>{max_lift_val}</b></div>
-        <div style="font-size:13px;margin-bottom:8px;">&#127919; Avg Confidence: <b>{avg_conf}%</b></div>
-        <div style="font-size:13px;margin-bottom:8px;">&#128196; Matching Rules: <b>{filtered_count}</b></div>
-        <div style="margin-top:12px;font-size:12px;color:#64748b;">Multi-specialty review recommended for high-lift chains above {round(max_lift_val*0.8,1)}.</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    </div>'''
+
+    h += f'<div style="margin-top:14px;font-size:10px;color:#94a3b8;text-align:center;">Board composition auto-derived from FP-Growth association rules &bull; min_support=0.01 &bull; Risk tier: {risk_label}</div>'
+    st.markdown(h, unsafe_allow_html=True)
 
 @st.dialog("Demographic Comorbidity Insights", width="large")
 def dlg_demographic():
