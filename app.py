@@ -127,14 +127,15 @@ if rules_df is None or rules_df.empty:
 
 st.session_state["data_ready"] = True
 
-@st.cache_data(show_spinner=False)
 def _filter_rules(primary, secondary):
-    f = rules_df.copy()
+    # Cheap in-memory filter; no cache needed (DataFrame closure hashing is
+    # unreliable and can cause stale results after @st.cache_data clears).
+    fr = rules_df.copy()
     if primary != "All":
-        f = f[f['antecedents'].apply(lambda x: primary in str(x))]
+        fr = fr[fr['antecedents'].apply(lambda x: primary in str(x))]
     if secondary != "All":
-        f = f[f['consequents'].apply(lambda x: secondary in str(x))]
-    return f.sort_values('lift', ascending=False)
+        fr = fr[fr['consequents'].apply(lambda x: secondary in str(x))]
+    return fr.sort_values('lift', ascending=False)
 
 f = _filter_rules(st.session_state['primary_diag'], st.session_state['secondary_diag'])
 
@@ -580,10 +581,15 @@ with right_bottom:
                              index=(["All"] + all_items).index(st.session_state['secondary_diag']))
             submitted = st.form_submit_button("Apply Filters", type="primary", use_container_width=True)
             if submitted:
-                # Forms auto-rerun on submit — no explicit st.rerun() needed.
-                # The explicit call caused a double-rerun, leaving the UI in a
-                # stuck "executing" (dimmed) state.
-                st.session_state['primary_diag'], st.session_state['secondary_diag'] = p, s
+                # Filter values are computed at the top of the script, so we
+                # need a rerun to apply new session state to downstream code.
+                # Only rerun if something actually changed to avoid loops.
+                changed = (st.session_state['primary_diag'] != p
+                           or st.session_state['secondary_diag'] != s)
+                st.session_state['primary_diag'] = p
+                st.session_state['secondary_diag'] = s
+                if changed:
+                    st.rerun()
     with ac_col:
         st_html(algo_comparison_html)
 
