@@ -39,10 +39,12 @@ html,body,[class*="css"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'S
 .st-key-navbar [data-testid="stButton"] button:active{background:rgba(59,130,246,0.12)!important;}
 /* Patient badge button — right-aligned, smaller, bolder */
 .st-key-nav_patient button{color:#0f172a!important;font-weight:800!important;font-size:10px!important;text-align:right!important;letter-spacing:0.5px;}
-/* Card buttons (for demo / advisory cards in left column) */
-.card-btn [data-testid="stButton"] button{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.8)!important;border-radius:15px!important;padding:16px 18px!important;box-shadow:0 10px 30px rgba(0,0,0,0.07)!important;text-align:left!important;font-weight:700!important;font-size:14px!important;color:#0f172a!important;height:auto!important;white-space:pre-wrap!important;line-height:1.5!important;margin-bottom:15px!important;width:100%!important;}
-.card-btn [data-testid="stButton"] button:hover{box-shadow:0 10px 30px rgba(59,130,246,0.18)!important;border-color:rgba(59,130,246,0.3)!important;transform:translateY(-1px);}
-.card-btn-advisory [data-testid="stButton"] button{border-left:4px solid #3b82f6!important;}
+/* Card frames for demographic + advisory buttons in the left column */
+.st-key-card_demo button,.st-key-card_advisory button{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.8)!important;border-radius:15px!important;padding:18px 20px!important;box-shadow:0 10px 30px rgba(0,0,0,0.07)!important;text-align:left!important;font-weight:700!important;font-size:14px!important;color:#0f172a!important;height:auto!important;white-space:pre-wrap!important;line-height:1.5!important;margin-bottom:15px!important;width:100%!important;min-height:0!important;}
+.st-key-card_demo button:hover,.st-key-card_advisory button:hover{box-shadow:0 14px 34px rgba(59,130,246,0.2)!important;border-color:rgba(59,130,246,0.35)!important;transform:translateY(-2px);}
+.st-key-card_demo button:focus,.st-key-card_advisory button:focus{box-shadow:0 10px 30px rgba(0,0,0,0.07)!important;outline:none!important;}
+.st-key-card_demo button{border-left:4px solid #7c3aed!important;}
+.st-key-card_advisory button{border-left:4px solid #3b82f6!important;}
 /* Remove Streamlit's default element spacing that breaks layout */
 .element-container{margin-bottom:0!important;}
 div[data-testid="stVerticalBlock"]>div{gap:0!important;}
@@ -389,16 +391,40 @@ def dlg_advisory():
     </div>
     """, unsafe_allow_html=True)
 
-@st.dialog("Demographic Comorbidity Insights")
+@st.dialog("Demographic Comorbidity Insights", width="large")
 def dlg_demographic():
-    st.markdown("""
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <tr style="background:#0f172a;color:white;"><th style="padding:8px;">Age Group</th><th style="padding:8px;">Condition</th><th style="padding:8px;">Confidence</th></tr>
-      <tr style="background:#f8fafc;"><td style="padding:8px;">Senior (65+)</td><td style="padding:8px;">Heart Disease</td><td style="padding:8px;">82%</td></tr>
-      <tr><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Diabetes</td><td style="padding:8px;">75%</td></tr>
-      <tr style="background:#f8fafc;"><td style="padding:8px;">Adult (40-64)</td><td style="padding:8px;">Hypertension</td><td style="padding:8px;">71%</td></tr>
-    </table>
-    """, unsafe_allow_html=True)
+    cohorts = [
+        {"name": "Young",  "range": "18-39", "ic": "&#129490;", "c": "#10b981", "bg": "#f0fdf4",
+         "conds": [("Anxiety", 68), ("Migraine", 54), ("Asthma", 47)]},
+        {"name": "Adult",  "range": "40-64", "ic": "&#129489;", "c": "#3b82f6", "bg": "#eff6ff",
+         "conds": [("Diabetes", 75), ("Hypertension", 71), ("High Cholesterol", 66)]},
+        {"name": "Senior", "range": "65+",   "ic": "&#129491;", "c": "#7c3aed", "bg": "#faf5ff",
+         "conds": [("Heart Disease", 82), ("Arthritis", 78), ("Kidney Disease", 64)]},
+    ]
+
+    h = '''<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:14px 18px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">DEMOGRAPHIC COMORBIDITY</div><div style="font-size:22px;font-weight:700;">3 age cohorts analyzed</div></div>
+      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">RANGE</div><div style="font-size:14px;font-weight:700;">Young &rarr; Senior</div></div>
+    </div>'''
+
+    for g in cohorts:
+        h += f'<div style="background:{g["bg"]};border-left:4px solid {g["c"]};border-radius:0 12px 12px 0;padding:14px 18px;margin-bottom:12px;">'
+        h += f'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+        h += f'<div style="width:40px;height:40px;border-radius:50%;background:{g["c"]};color:white;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 10px {g["c"]}33;">{g["ic"]}</div>'
+        h += f'<div style="flex:1;"><div style="font-size:15px;font-weight:800;color:#0f172a;">{g["name"]}</div><div style="font-size:10px;color:#64748b;letter-spacing:1px;font-weight:700;">AGE {g["range"]}</div></div>'
+        top_conf = max(c[1] for c in g["conds"])
+        h += f'<div style="text-align:right;"><div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">TOP CONF</div><div style="font-size:16px;font-weight:700;color:{g["c"]};">{top_conf}%</div></div>'
+        h += '</div>'
+        for cond, conf in g["conds"]:
+            h += f'<div style="display:flex;align-items:center;gap:12px;margin-bottom:7px;">'
+            h += f'<div style="width:130px;font-size:12px;font-weight:600;color:#0f172a;">{cond}</div>'
+            h += f'<div style="flex:1;height:9px;background:rgba(255,255,255,0.7);border-radius:5px;overflow:hidden;border:1px solid rgba(0,0,0,0.04);"><div style="width:{conf}%;height:100%;background:{g["c"]};border-radius:5px;"></div></div>'
+            h += f'<div style="width:44px;text-align:right;font-size:11px;font-weight:700;color:{g["c"]};">{conf}%</div>'
+            h += '</div>'
+        h += '</div>'
+
+    h += '<div style="margin-top:14px;font-size:10px;color:#94a3b8;text-align:center;">Confidence values segmented from FP-Growth rules by age cohort &bull; ordered Young &rarr; Senior</div>'
+    st.markdown(h, unsafe_allow_html=True)
 
 # ────────────────────────────────────────────────────────────────────────────
 # Background anatomical image (purely decorative)
@@ -437,16 +463,12 @@ main_l, main_m, main_r = st.columns([1, 1.3, 1.6], gap="medium")
 with main_l:
     st.markdown('<h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">Dynamic Care Plan</h3>', unsafe_allow_html=True)
     st.markdown(plan_html, unsafe_allow_html=True)
-    # Demo card as native button (styled via .card-btn CSS scope)
-    st.markdown('<div class="card-btn">', unsafe_allow_html=True)
-    if st.button("📊   Demographic Comorbidity Patterns", key="card_demo", use_container_width=True):
+    # Demographic card — frame via .st-key-card_demo CSS, no icon in label
+    if st.button("Demographic Comorbidity Patterns\nAge-stratified condition patterns across cohorts.\nView Insights →", key="card_demo", use_container_width=True):
         dlg_demographic()
-    st.markdown('</div>', unsafe_allow_html=True)
-    # Advisory card as native button
-    st.markdown('<div class="card-btn card-btn-advisory">', unsafe_allow_html=True)
+    # Advisory card — frame via .st-key-card_advisory CSS, keeps its 🩺 sticker
     if st.button("🩺   Multi-Disciplinary Consult\nAI-assisted specialist board recommendations.\nView Insights →", key="card_advisory", use_container_width=True):
         dlg_advisory()
-    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown(insight, unsafe_allow_html=True)
 
 with main_m:
