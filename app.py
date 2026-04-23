@@ -29,19 +29,16 @@ html,body,[class*="css"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'S
 [data-testid="stForm"]{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.8)!important;border-radius:15px!important;padding:4px 18px 18px!important;box-shadow:0 10px 30px rgba(0,0,0,0.07)!important;margin-top:0!important;}
 [data-testid="stForm"] label{font-size:12px;font-weight:600;color:#64748b;}
 [data-testid="stForm"] .stFormSubmitButton button{border-radius:8px;}
-/* Pill-shaped nav bar container */
-.nav-bar{background:rgba(255,255,255,0.75);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border-radius:100px;box-shadow:0 4px 20px rgba(0,0,0,0.05);padding:6px 28px;margin-bottom:18px;position:relative;z-index:10;}
+/* Pill-shaped nav bar — wraps the container keyed "navbar" */
+.st-key-navbar{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border-radius:100px!important;box-shadow:0 4px 20px rgba(0,0,0,0.05)!important;padding:6px 28px!important;margin-bottom:18px!important;position:relative;z-index:10;}
 .nav-brand{font-weight:700;font-size:19px;line-height:40px;color:#0f172a;}
-.nav-patient{text-align:right;line-height:1.2;padding-top:4px;}
-.nav-patient .lbl{font-size:10px;font-weight:800;color:#0f172a;}
-.nav-patient .sts{font-size:9px;color:#3b82f6;}
-/* Nav buttons styled as nav links */
-.nav-row [data-testid="stButton"] button{background:transparent!important;border:none!important;color:#64748b!important;font-size:13px!important;font-weight:600!important;padding:10px 12px!important;height:auto!important;box-shadow:none!important;min-height:0!important;line-height:1.2!important;}
-.nav-row [data-testid="stButton"] button:hover{color:#3b82f6!important;background:rgba(59,130,246,0.06)!important;border-radius:10px!important;}
-.nav-row [data-testid="stButton"] button:focus{box-shadow:none!important;outline:none!important;}
-/* The patient badge button */
-.nav-patient-btn [data-testid="stButton"] button{background:transparent!important;border:none!important;color:#0f172a!important;font-weight:800!important;font-size:10px!important;padding:8px 12px!important;height:auto!important;text-align:right!important;box-shadow:none!important;line-height:1.3!important;}
-.nav-patient-btn [data-testid="stButton"] button:hover{background:rgba(59,130,246,0.06)!important;border-radius:10px!important;}
+/* Nav buttons inside the pill: transparent, styled as links */
+.st-key-navbar [data-testid="stButton"] button{background:transparent!important;border:none!important;color:#64748b!important;font-size:13px!important;font-weight:600!important;padding:10px 12px!important;height:auto!important;box-shadow:none!important;min-height:0!important;line-height:1.2!important;}
+.st-key-navbar [data-testid="stButton"] button:hover{color:#3b82f6!important;background:rgba(59,130,246,0.06)!important;border-radius:10px!important;}
+.st-key-navbar [data-testid="stButton"] button:focus{box-shadow:none!important;outline:none!important;}
+.st-key-navbar [data-testid="stButton"] button:active{background:rgba(59,130,246,0.12)!important;}
+/* Patient badge button — right-aligned, smaller, bolder */
+.st-key-nav_patient button{color:#0f172a!important;font-weight:800!important;font-size:10px!important;text-align:right!important;letter-spacing:0.5px;}
 /* Card buttons (for demo / advisory cards in left column) */
 .card-btn [data-testid="stButton"] button{background:rgba(255,255,255,0.95)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.8)!important;border-radius:15px!important;padding:16px 18px!important;box-shadow:0 10px 30px rgba(0,0,0,0.07)!important;text-align:left!important;font-weight:700!important;font-size:14px!important;color:#0f172a!important;height:auto!important;white-space:pre-wrap!important;line-height:1.5!important;margin-bottom:15px!important;width:100%!important;}
 .card-btn [data-testid="stButton"] button:hover{box-shadow:0 10px 30px rgba(59,130,246,0.18)!important;border-color:rgba(59,130,246,0.3)!important;transform:translateY(-1px);}
@@ -412,28 +409,25 @@ if bg_html:
 # ────────────────────────────────────────────────────────────────────────────
 # NAV BAR — native Streamlit buttons styled as nav links via CSS scope
 # ────────────────────────────────────────────────────────────────────────────
-st.markdown('<div class="nav-bar"><div class="nav-row">', unsafe_allow_html=True)
-nav = st.columns([3.2, 0.9, 1.2, 0.9, 0.6, 0.3, 1.4])
-with nav[0]:
-    st.markdown('<div class="nav-brand">⚕ Clinical Comorbidity &amp; Treatment Patterns</div>', unsafe_allow_html=True)
-with nav[1]:
-    if st.button("Dashboard", key="nav_dash", use_container_width=True):
-        dlg_dashboard()
-with nav[2]:
-    if st.button("Appointments", key="nav_appt", use_container_width=True):
-        dlg_appointments()
-with nav[3]:
-    if st.button("Schedule", key="nav_sched", use_container_width=True):
-        dlg_schedule()
-with nav[4]:
-    if st.button("Labs", key="nav_labs", use_container_width=True):
-        dlg_labs()
-with nav[6]:
-    st.markdown('<div class="nav-patient-btn">', unsafe_allow_html=True)
-    if st.button("PATIENT #2440  ●  CONNECTED", key="nav_patient", use_container_width=True):
-        dlg_patient()
-    st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('</div></div>', unsafe_allow_html=True)
+with st.container(key="navbar"):
+    nav = st.columns([3.2, 0.9, 1.2, 0.9, 0.6, 0.3, 1.4], vertical_alignment="center")
+    with nav[0]:
+        st.markdown('<div class="nav-brand">⚕ Clinical Comorbidity &amp; Treatment Patterns</div>', unsafe_allow_html=True)
+    with nav[1]:
+        if st.button("Dashboard", key="nav_dash", use_container_width=True):
+            dlg_dashboard()
+    with nav[2]:
+        if st.button("Appointments", key="nav_appt", use_container_width=True):
+            dlg_appointments()
+    with nav[3]:
+        if st.button("Schedule", key="nav_sched", use_container_width=True):
+            dlg_schedule()
+    with nav[4]:
+        if st.button("Labs", key="nav_labs", use_container_width=True):
+            dlg_labs()
+    with nav[6]:
+        if st.button("PATIENT #2440  ●  CONNECTED", key="nav_patient", use_container_width=True):
+            dlg_patient()
 
 # ────────────────────────────────────────────────────────────────────────────
 # MAIN 3-COLUMN LAYOUT — native Streamlit columns
