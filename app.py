@@ -472,26 +472,63 @@ def dlg_labs():
     flagged = [t for p in panels for t in p["tests"] if t["s"] != "good"]
     smap = {"good": ("#10b981", "&#10003; Normal"), "warn": ("#f59e0b", "&#9888; Monitor"), "bad": ("#ef4444", "&#10007; High")}
 
-    h = f'''<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:14px 18px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-      <div><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">LAB RESULTS</div><div style="font-size:22px;font-weight:700;">{len(flagged)} abnormal flagged</div></div>
-      <div style="text-align:right;"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">PATIENT #2440</div><div style="font-size:14px;font-weight:700;">Last drawn {(now - timedelta(days=3)).strftime('%b %d, %Y')}</div></div>
+    # Outer wrapper — explicit white background so nothing bleeds through from Streamlit's dark theme
+    h = '<div style="background:#ffffff;border-radius:14px;padding:2px;">'
+
+    # ── Header banner (dark gradient, white text) ────────────────────────────
+    h += f'''<div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#ffffff;padding:14px 18px;border-radius:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">LAB RESULTS</div>
+        <div style="font-size:22px;font-weight:700;color:#ffffff;">{len(flagged)} abnormal flagged</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">PATIENT #2440</div>
+        <div style="font-size:14px;font-weight:700;color:#ffffff;">Last drawn {(now - timedelta(days=3)).strftime('%b %d, %Y')}</div>
+      </div>
     </div>'''
 
+    # ── Panels ────────────────────────────────────────────────────────────────
     for p in panels:
-        h += f'<div style="margin-bottom:14px;"><div style="font-size:10px;font-weight:800;color:{p["c"]};letter-spacing:1.5px;margin-bottom:8px;border-bottom:2px solid {p["c"]};padding-bottom:5px;">{p["name"]} PANEL</div>'
-        h += '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-        h += '<tr style="background:#f1f5f9;"><th style="padding:6px 8px;text-align:left;font-size:9px;color:#64748b;letter-spacing:0.5px;">TEST</th><th style="padding:6px 8px;text-align:left;font-size:9px;color:#64748b;letter-spacing:0.5px;">RESULT</th><th style="padding:6px 8px;text-align:left;font-size:9px;color:#64748b;letter-spacing:0.5px;">RANGE</th><th style="padding:6px 8px;text-align:left;font-size:9px;color:#64748b;letter-spacing:0.5px;">6-MO TREND</th><th style="padding:6px 8px;text-align:right;font-size:9px;color:#64748b;letter-spacing:0.5px;">STATUS</th></tr>'
+        h += f'''<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:10px;font-weight:800;color:{p["c"]};letter-spacing:1.5px;margin-bottom:10px;border-bottom:2px solid {p["c"]};padding-bottom:5px;">{p["name"]} PANEL</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;background:#ffffff;">
+            <tr style="background:#f8fafc;">
+              <th style="padding:6px 8px;text-align:left;font-size:9px;color:#475569;font-weight:700;letter-spacing:0.5px;">TEST</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;color:#475569;font-weight:700;letter-spacing:0.5px;">RESULT</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;color:#475569;font-weight:700;letter-spacing:0.5px;">REFERENCE RANGE</th>
+              <th style="padding:6px 8px;text-align:left;font-size:9px;color:#475569;font-weight:700;letter-spacing:0.5px;">6-MO TREND</th>
+              <th style="padding:6px 8px;text-align:right;font-size:9px;color:#475569;font-weight:700;letter-spacing:0.5px;">STATUS</th>
+            </tr>'''
         for t in p["tests"]:
             sc, sl = smap[t["s"]]
-            h += f'<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:8px;font-weight:700;">{t["n"]}</td><td style="padding:8px;font-weight:700;color:{sc};">{t["v"]}</td><td style="padding:8px;color:#94a3b8;">{t["r"]}</td><td style="padding:8px;">{spark(t["tr"], sc)}</td><td style="padding:8px;text-align:right;"><span style="font-size:10px;color:{sc};font-weight:700;">{sl}</span></td></tr>'
+            row_bg = "#fffbeb" if t["s"] == "warn" else ("#fef2f2" if t["s"] == "bad" else "#f0fdf4")
+            h += f'''<tr style="border-bottom:1px solid #f1f5f9;background:{row_bg};">
+              <td style="padding:9px 8px;font-weight:700;color:#0f172a;">{t["n"]}</td>
+              <td style="padding:9px 8px;font-weight:700;color:{sc};">{t["v"]}</td>
+              <td style="padding:9px 8px;color:#64748b;">{t["r"]}</td>
+              <td style="padding:9px 8px;">{spark(t["tr"], sc)}</td>
+              <td style="padding:9px 8px;text-align:right;">
+                <span style="font-size:10px;font-weight:700;color:{sc};background:{row_bg};padding:3px 8px;border-radius:20px;border:1px solid {sc};">{sl}</span>
+              </td>
+            </tr>'''
         h += '</table></div>'
 
+    # ── Clinical note ─────────────────────────────────────────────────────────
     if len(f) > 0:
         rr = f.iloc[0]
         rule_txt = f"{clean_fs(rr['antecedents'])[:26]} &rarr; {clean_fs(rr['consequents'])[:26]} (lift {rr['lift']:.1f})"
     else:
         rule_txt = "No matching pattern"
-    h += f'<div style="background:#fef2f2;border-left:3px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;margin-top:10px;font-size:11px;color:#475569;line-height:1.5;"><b style="color:#ef4444;">Clinical Note:</b> Abnormal LDL + HbA1c aligns with mined rule: <b>{rule_txt}</b>. Recommend lifestyle intervention + statin review.</div>'
+    h += f'''<div style="background:#fef2f2;border-left:3px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;margin-top:4px;">
+      <div style="font-size:11px;color:#0f172a;line-height:1.6;">
+        <b style="color:#ef4444;">&#9888; Clinical Note:</b>
+        Abnormal LDL + HbA1c aligns with mined rule:
+        <b style="color:#0f172a;">{rule_txt}</b>.
+        Recommend lifestyle intervention + statin review.
+      </div>
+    </div>'''
+
+    h += '</div>'  # close outer white wrapper
     st.markdown(h, unsafe_allow_html=True)
 
     csv_data = "Panel,Test,Result,Range,Status,Date\n"
