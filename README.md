@@ -1,5 +1,7 @@
 # Clinical Comorbidity & Treatment Pattern Mining
 
+[![CI](https://github.com/Alan-911/clinical-comorbidity-dashboard/actions/workflows/validate.yml/badge.svg)](https://github.com/Alan-911/clinical-comorbidity-dashboard/actions/workflows/validate.yml) [![Security](https://github.com/Alan-911/clinical-comorbidity-dashboard/actions/workflows/security.yml/badge.svg)](https://github.com/Alan-911/clinical-comorbidity-dashboard/actions/workflows/security.yml)
+
 **Reproducible association-rule mining · Interactive analytics · Educational research prototype**
 
 [Live Streamlit dashboard](https://clinical-comorbidity-dashboard.streamlit.app) · [Analysis notebook](notebooks/clinical_comorbidity_analysis.ipynb) · [Project report](docs/Clinical_Comorbidity_Dashboard_Report.pdf) · [Source](app.py)
@@ -132,3 +134,11 @@ docs/                                   Report and presentation materials
 **Yves Alain Iragena** · [Portfolio](https://alan-911.github.io/my-portfolio/) · [GitHub](https://github.com/Alan-911)
 
 This repository is an educational data-science engineering project, not clinical software.
+
+
+## Repository quality and security
+
+- [Continuous integration](.github/workflows/validate.yml), [CodeQL and secret scanning](.github/workflows/security.yml).
+- [Security reporting policy](SECURITY.md) and [contribution guidelines](CONTRIBUTING.md).
+- Data checks validate the checked-in snapshots; they do not establish clinical safety, causality or real-world medical validity.
+- Licensing for reuse should be confirmed with the project owner; no new license is granted by these workflow updates.
