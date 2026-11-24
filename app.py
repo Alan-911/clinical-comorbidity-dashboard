@@ -4,6 +4,7 @@ import os, base64, re, time as _time
 from datetime import datetime, timedelta
 from mlxtend.preprocessing import TransactionEncoder
 from mlxtend.frequent_patterns import fpgrowth, apriori, association_rules
+from src.rule_engine import filter_association_rules, rule_members
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
@@ -154,7 +155,7 @@ def get_data():
             rules.to_csv(rp, index=False)
         items = set()
         for v in rules['antecedents'].tolist()+rules['consequents'].tolist():
-            items.update([i.strip() for i in clean_fs(v).split(",") if i.strip()])
+            items.update(rule_members(v))
         return rules, sorted(items)
     except Exception as e:
         return None, str(e)
@@ -227,14 +228,8 @@ if rules_df is None or rules_df.empty:
 st.session_state["data_ready"] = True
 
 def _filter_rules(primary, secondary):
-    # Cheap in-memory filter; no cache needed (DataFrame closure hashing is
-    # unreliable and can cause stale results after @st.cache_data clears).
-    fr = rules_df.copy()
-    if primary != "All":
-        fr = fr[fr["antecedents"].apply(lambda x: primary in {i.strip() for i in clean_fs(x).split(",")})]
-    if secondary != "All":
-        fr = fr[fr["consequents"].apply(lambda x: secondary in {i.strip() for i in clean_fs(x).split(",")})]
-    return fr.sort_values('lift', ascending=False)
+    """Filter precomputed associations by exact rule item membership."""
+    return filter_association_rules(rules_df, primary, secondary)
 
 f = _filter_rules(st.session_state['primary_diag'], st.session_state['secondary_diag'])
 
