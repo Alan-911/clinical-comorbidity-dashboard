@@ -1,5 +1,12 @@
 # Clinical Comorbidity & Treatment Patterns Dashboard
 
+**Applied data mining · Python · FP-Growth · Streamlit · Reproducible analytical workflow**
+
+**Start here:** [Live dashboard](https://clinical-comorbidity-dashboard.streamlit.app) · [Source code](app.py) · [Analysis notebook](notebooks/clinical_comorbidity_analysis.ipynb) · [Project report](docs/Clinical_Comorbidity_Dashboard_Report.pdf)
+
+**Project scope:** An educational exploration of relationships between conditions in sample clinical transactions. Association rules describe co-occurrence, not causal relationships, medical diagnoses, or patient-specific recommendations. No patient care claims are made.
+
+
 A data-mining coursework project that applies **FP-Growth association rule mining** to discover hidden patterns in clinical comorbidities, presented through a professional, interactive Streamlit dashboard.
 
 **🔗 [Live Dashboard](https://clinical-comorbidity-dashboard.streamlit.app)**  
@@ -64,12 +71,12 @@ Live at clinical-comorbidity-dashboard.streamlit.app
 - **Min Confidence**: 50% (rule is correct ≥50% of the time)
 - **Ranking Metric**: Lift (descending) - how much stronger the association than random
 
-### Sample Rule
+### Illustrative rule (not a validated clinical finding)
 
 ```
 Diabetes → Heart Disease
   Support:    12% (appears in 12% of visits)
-  Confidence: 60% (60% of diabetics have heart disease)
+  Confidence: 60% (60% of transactions containing diabetes also contain heart disease)
   Lift:       4.0 (diabetics are 4× more likely to have heart disease)
 ```
 
@@ -133,11 +140,11 @@ Finds rules of the form **X → Y** where:
 - **Speed**: Avoids Apriori's exponential candidate generation
 - **Scalability**: Uses a compressed prefix-tree (FP-tree)
 - **Dense Data**: Excels on clinical transactions with many items
-- **Real-time**: ~0.4s mining on 2,440 visits = responsive UI
+- **Interactive**: The application supports exploration of mined rules; any runtime claim should be supported by reproducible benchmarks
 
 ### Why Data Mining Here?
-1. **Scale**: 2,440 visits → impossible to manually spot patterns
-2. **Objectivity**: Quantified metrics replace subjective judgment
+1. **Scale**: 2,440 visits → computational mining makes multi-condition patterns easier to explore consistently
+2. **Consistency**: Quantified metrics supplement, rather than replace, domain judgment
 3. **Discovery**: Finds unexpected correlations research may overlook
 4. **Reproducibility**: Same data + same algorithm = same rules
 
@@ -253,7 +260,7 @@ A comprehensive **19-page PDF report** is available in [`docs/Clinical_Comorbidi
 - **GitHub**: [Alan-911/clinical-comorbidity-dashboard](https://github.com/Alan-911/clinical-comorbidity-dashboard)
 - **Live App**: [clinical-comorbidity-dashboard.streamlit.app](https://clinical-comorbidity-dashboard.streamlit.app)
 - **Created**: School data-mining coursework
-- **Status**: Complete and deployed
+- **Status**: Public educational prototype; not validated for clinical use
 
 ---
 
