@@ -4,11 +4,11 @@
 
 [Live Streamlit dashboard](https://clinical-comorbidity-dashboard.streamlit.app) · [Analysis notebook](notebooks/clinical_comorbidity_analysis.ipynb) · [Project report](docs/Clinical_Comorbidity_Dashboard_Report.pdf) · [Source](app.py)
 
-## Dashboard and research visualization
+## Dashboard preview
 
-![Clinical pattern mining architecture and dataset overview](docs/images/project-overview.svg)
+![Clinical Comorbidity dashboard mockup](https://d2ol7oe51mr4n9.cloudfront.net/user_3BjvznL67PSnqP9w6BCX0wqGk5P/76c5fd6e-6f76-4368-b8c7-761dbac23800.png)
 
-*Illustrative architecture and checked-in dataset counts—not a screenshot of the running Streamlit interface.*
+*Illustrative dashboard mockup supplied for the project's README. It is not a verified browser screenshot or a source of benchmark measurements. For the current interactive implementation, [open the Streamlit dashboard](https://clinical-comorbidity-dashboard.streamlit.app/).*
 
 ## Overview
 
