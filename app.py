@@ -198,11 +198,14 @@ def get_algo_timings():
 # ── Load data with explicit spinner and error surfacing (Steps 1, 3, 6) ──
 with st.spinner("Loading clinical rules..."):
     data = get_data()
+    _benchmark_error = None
     try:
         _timings = get_algo_timings()
     except Exception as exc:
-        st.error(f"Algorithm comparison unavailable: {exc}. No invented benchmark values are displayed.")
-        st.stop()
+        _benchmark_error = str(exc)
+        _timings = {"fp_t": 0, "ap_t": 0, "speedup": 0, "faster": "unavailable",
+                    "fp_rules": 0, "ap_rules": 0, "fp_items": 0, "ap_items": 0}
+        st.warning("Algorithm comparison is unavailable; no benchmark result will be shown.")
 _fp_t    = _timings["fp_t"]
 _ap_t    = _timings["ap_t"]
 _speedup = _timings["speedup"]
@@ -305,6 +308,13 @@ algo_comparison_html = f"""<div class="gc">
     <div style="font-size:9px;color:#475569;line-height:1.6;">This dataset produced {_fp_rules:,} FP-Growth rules and {_ap_rules:,} Apriori rules at the specified thresholds. {_faster} was {_speedup}&times; faster in this run; performance depends on the environment and dataset.</div>
   </div>
 </div>"""
+
+if _benchmark_error is not None:
+    algo_comparison_html = (
+        '<div class="gc"><h3>Algorithm Comparison</h3>'
+        '<p>Benchmark unavailable: the calculation failed. '
+        'No fallback times or speedup factors are reported.</p></div>'
+    )
 
 # ────────────────────────────────────────────────────────────────────────────
 # Native Streamlit dialogs (st.dialog) — no JS, no CSP issues, always work.
