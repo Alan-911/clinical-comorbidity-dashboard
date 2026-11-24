@@ -7,7 +7,9 @@ from mlxtend.frequent_patterns import fpgrowth, apriori, association_rules
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
-st.set_page_config(page_title="Clinical Intelligence Dashboard", page_icon="⚕️", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Clinical Pattern Mining — Research Demo", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
+
+st.info("RESEARCH DEMONSTRATION — All patient profiles, appointments, lab panels and suggested actions are fictional UI examples. Association rules show co-occurrence, not causation, predictions, diagnoses, or treatment recommendations. This is not a clinical product.")
 
 # ── 🔥 SURGICAL OVERLAY KILLER — targets true overlay layers only ─────────────
 st.markdown("""
@@ -25,7 +27,7 @@ img,canvas{pointer-events:none!important;}
 html,body,.stApp,[data-testid="stAppViewContainer"],[data-testid="stMain"],section.main,.block-container,[data-testid="stMarkdownContainer"],[data-testid="stMarkdownContainer"] *,p,span,div,label,h1,h2,h3,h4,h5,h6{color:#0f172a!important;}
 /* Allow elements that explicitly opt into light text (dark gradient cards, badges) to keep white */
 [style*="color:white"],[style*="color: white"],[style*="color:#fff"],[style*="color: #fff"],[style*="color:#ffffff"],[style*="color: #ffffff"]{color:#ffffff!important;}
-/* Descendants of white-text cards without their own inline color inherit white (fixes TOP CLINICAL INSIGHT inner lines) */
+/* Descendants of white-text cards without their own inline color inherit white (fixes TOP ASSOCIATION RULE inner lines) */
 [style*="color:white"] *:not([style*="color:"]):not([style*="color "]),[style*="color: white"] *:not([style*="color:"]):not([style*="color "]),[style*="color:#fff"] *:not([style*="color:"]):not([style*="color "]){color:#ffffff!important;}
 /* 🔥 BULLETPROOF: any element inside a dark-gradient container (covers every dialog header + insight card) */
 [style*="linear-gradient(135deg,#0f172a"] *:not([style*="color:"]):not([style*="color "]),[style*="linear-gradient(135deg, #0f172a"] *:not([style*="color:"]):not([style*="color "]){color:#ffffff!important;}
@@ -189,14 +191,17 @@ def get_algo_timings():
         return {"fp_t": fp_t, "ap_t": ap_t, "speedup": speedup, "faster": faster,
                 "fp_rules": rules_fp, "ap_rules": rules_ap,
                 "fp_items": len(fi_fp), "ap_items": len(fi_ap)}
-    except Exception:
-        return {"fp_t": 0.4, "ap_t": 1.2, "speedup": 3.0, "faster": "FP-Growth",
-                "fp_rules": 176, "ap_rules": 176, "fp_items": 787, "ap_items": 787}
+    except Exception as exc:
+        raise RuntimeError("Apriori / FP-Growth benchmark could not complete") from exc
 
 # ── Load data with explicit spinner and error surfacing (Steps 1, 3, 6) ──
 with st.spinner("Loading clinical rules..."):
     data = get_data()
-    _timings = get_algo_timings()
+    try:
+        _timings = get_algo_timings()
+    except Exception as exc:
+        st.error(f"Algorithm comparison unavailable: {exc}. No invented benchmark values are displayed.")
+        st.stop()
 _fp_t    = _timings["fp_t"]
 _ap_t    = _timings["ap_t"]
 _speedup = _timings["speedup"]
@@ -226,9 +231,9 @@ def _filter_rules(primary, secondary):
     # unreliable and can cause stale results after @st.cache_data clears).
     fr = rules_df.copy()
     if primary != "All":
-        fr = fr[fr['antecedents'].apply(lambda x: primary in str(x))]
+        fr = fr[fr["antecedents"].apply(lambda x: primary in {i.strip() for i in clean_fs(x).split(",")})]
     if secondary != "All":
-        fr = fr[fr['consequents'].apply(lambda x: secondary in str(x))]
+        fr = fr[fr["consequents"].apply(lambda x: secondary in {i.strip() for i in clean_fs(x).split(",")})]
     return fr.sort_values('lift', ascending=False)
 
 f = _filter_rules(st.session_state['primary_diag'], st.session_state['secondary_diag'])
@@ -302,7 +307,7 @@ algo_comparison_html = f"""<div class="gc">
   </div>
   <div style="border-left:3px solid #10b981;background:#f0fdf4;padding:8px 10px;border-radius:0 8px 8px 0;">
     <div style="font-size:9px;font-weight:800;color:#10b981;letter-spacing:0.5px;margin-bottom:4px;">WHY FP-GROWTH FOR THIS SYSTEM</div>
-    <div style="font-size:9px;color:#475569;line-height:1.6;">Both algorithms produce identical rule sets ({_fp_rules:,} rules, {_fp_items:,} itemsets). {_faster} was {_speedup}&times; faster on this run. FP-Growth's theoretical advantage — no candidate generation — scales with dataset size; Apriori's cost grows exponentially with item count.</div>
+    <div style="font-size:9px;color:#475569;line-height:1.6;">This dataset produced {_fp_rules:,} FP-Growth rules and {_ap_rules:,} Apriori rules at the specified thresholds. {_faster} was {_speedup}&times; faster in this run; performance depends on the environment and dataset.</div>
   </div>
 </div>"""
 
@@ -323,18 +328,18 @@ def dlg_dashboard():
       <div style="background:#f8fafc;border-radius:12px;padding:14px;text-align:center;border-top:3px solid #f59e0b;"><div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">MATCHING</div><div style="font-size:28px;font-weight:700;color:#f59e0b;">{filtered_count}</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-      <div style="background:#f8fafc;border-radius:12px;padding:16px;"><div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">Active Filters</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Primary Diagnosis:</span> <span style="font-weight:700;">{st.session_state['primary_diag']}</span></div><div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Secondary Condition:</span> <span style="font-weight:700;">{st.session_state['secondary_diag']}</span></div></div>
-      <div style="background:#f8fafc;border-radius:12px;padding:16px;"><div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">System Info</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Algorithm:</span> FP-Growth (min_support=0.01)</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Dataset:</span> 2,440 clinical visits</div><div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Partner:</span> MedIntel Analytics Corp.</div></div>
+      <div style="background:#f8fafc;border-radius:12px;padding:16px;"><div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">Active Filters</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Antecedent Item:</span> <span style="font-weight:700;">{st.session_state['primary_diag']}</span></div><div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Consequent Item:</span> <span style="font-weight:700;">{st.session_state['secondary_diag']}</span></div></div>
+      <div style="background:#f8fafc;border-radius:12px;padding:16px;"><div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:10px;">System Info</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Algorithm:</span> FP-Growth (min_support=0.01)</div><div style="font-size:12px;margin-bottom:6px;"><span style="color:#94a3b8;font-weight:600;">Dataset:</span> 2,440 clinical visits</div><div style="font-size:12px;"><span style="color:#94a3b8;font-weight:600;">Partner:</span> Educational Research Demonstration</div></div>
     </div>
     <div style="margin-top:14px;font-size:10px;color:#94a3b8;text-align:center;">Generated from FP-Growth analysis &bull; {total_rules} rules &bull; min_support=0.01</div>
     """, unsafe_allow_html=True)
 
-@st.dialog("Patient #2440")
+@st.dialog("Fictional Patient Example #2440")
 def dlg_patient():
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">
       <div style="width:56px;height:56px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:white;font-weight:700;">P</div>
-      <div><div style="font-size:18px;font-weight:700;">Patient #2440</div><div style="font-size:12px;color:#10b981;font-weight:600;margin-top:3px;">&#9679; Active Session &mdash; Connected</div></div>
+      <div><div style="font-size:18px;font-weight:700;">Demo Patient #2440</div><div style="font-size:12px;color:#10b981;font-weight:600;margin-top:3px;">&#9679; Active Session &mdash; Connected</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
       <div class="ap" style="border-left:3px solid #3b82f6;"><div style="font-size:10px;color:#94a3b8;font-weight:700;">TOTAL VISITS</div><div style="font-size:18px;font-weight:700;">2,440</div></div>
@@ -482,7 +487,7 @@ def dlg_labs():
         <div style="font-size:22px;font-weight:700;color:#ffffff;">{len(flagged)} abnormal flagged</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">PATIENT #2440</div>
+        <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;">DEMO PATIENT #2440</div>
         <div style="font-size:14px;font-weight:700;color:#ffffff;">Last drawn {(now - timedelta(days=3)).strftime('%b %d, %Y')}</div>
       </div>
     </div>'''
@@ -521,10 +526,10 @@ def dlg_labs():
         rule_txt = "No matching pattern"
     h += f'''<div style="background:#fef2f2;border-left:3px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;margin-top:4px;">
       <div style="font-size:11px;color:#0f172a;line-height:1.6;">
-        <b style="color:#ef4444;">&#9888; Clinical Note:</b>
-        Abnormal LDL + HbA1c aligns with mined rule:
+        <b style="color:#ef4444;">&#9432; Educational Example:</b>
+        Synthetic lab indicators are shown beside the mined rule:
         <b style="color:#0f172a;">{rule_txt}</b>.
-        Recommend lifestyle intervention + statin review.
+        This is an illustrative association in sample records, not a patient-specific interpretation or treatment recommendation.
       </div>
     </div>'''
 
@@ -726,7 +731,7 @@ with st.container(key="navbar"):
 main_l, main_m, main_r = st.columns([1, 1.3, 1.6], gap="medium")
 
 with main_l:
-    st.markdown('<h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">Dynamic Care Plan</h3>', unsafe_allow_html=True)
+    st.markdown('<h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">Example Pattern Review</h3>', unsafe_allow_html=True)
     st.markdown(plan_html, unsafe_allow_html=True)
     # Demographic card — frame via .st-key-card_demo CSS, no icon in label
     if st.button("Demographic Comorbidity Patterns\nAge-stratified condition patterns across cohorts.\nView Insights →", key="card_demo", use_container_width=True):
@@ -781,7 +786,7 @@ with main_r:
           <div style="margin-bottom:11px;">
             <div style="font-size:10px;font-weight:700;color:#b91c1c;margin-bottom:4px;">CONFIDENCE</div>
             <div style="display:flex;align-items:center;gap:5px;"><span style="font-size:9px;color:#94a3b8;">0</span><div style="flex:1;height:8px;background:linear-gradient(to right,#fef2f2,#b91c1c);border-radius:4px;border:1px solid #e2e8f0;"></div><span style="font-size:9px;color:#b91c1c;font-weight:600;">1</span></div>
-            <div style="font-size:9px;color:#94a3b8;margin-top:3px;line-height:1.4;">Probability A leads<br>to B in same visit</div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:3px;line-height:1.4;">P(B | A) within<br>the same transaction</div>
           </div>
           <div>
             <div style="font-size:10px;font-weight:700;color:#7c3aed;margin-bottom:4px;">LIFT</div>
@@ -838,18 +843,18 @@ st_html("""
          border-radius:14px;display:flex;align-items:center;justify-content:center;
          font-size:24px;flex-shrink:0;box-shadow:0 4px 14px rgba(59,130,246,0.25);">&#9877;</div>
     <div>
-      <div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:2px;margin-bottom:3px;">IN PARTNERSHIP WITH</div>
+      <div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:2px;margin-bottom:3px;">PROJECT TYPE</div>
       <div style="font-size:17px;font-weight:700;color:#0f172a;letter-spacing:0.3px;">MedIntel Analytics Corp.</div>
       <div style="font-size:10px;color:#94a3b8;margin-top:3px;">
-        Clinical Decision Support &nbsp;&bull;&nbsp; Comorbidity Intelligence &nbsp;&bull;&nbsp; Pattern Mining
+        Association Rule Mining &nbsp;&bull;&nbsp; Streamlit &nbsp;&bull;&nbsp; No clinical recommendations
       </div>
     </div>
   </div>
   <div style="display:flex;gap:28px;align-items:center;">
     <div style="text-align:center;">
-      <div style="font-size:8px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">CERTIFICATIONS</div>
-      <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:3px;">&#10003; HIPAA Compliant</div>
-      <div style="font-size:11px;font-weight:700;color:#3b82f6;">&#10003; ISO 13485:2016</div>
+      <div style="font-size:8px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">DATA STATUS</div>
+      <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:3px;">Not validated for clinical use</div>
+      <div style="font-size:11px;font-weight:700;color:#3b82f6;">Synthetic data only</div>
     </div>
     <div style="width:1px;height:36px;background:#e2e8f0;"></div>
     <div style="text-align:center;">
